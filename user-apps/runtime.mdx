@@ -1,0 +1,139 @@
+---
+title: "The runtime"
+sidebarTitle: "Runtime"
+description: "How ORION executes a User App: the WebAssembly runtime, memory placement, instruction and time budgets, and what happens when an app fails."
+icon: "microchip"
+tag: "VERIFIED"
+---
+
+ORION runs User Apps on **WAMR 2.4.5** — the WebAssembly Micro Runtime — configured as a fast
+interpreter and vendored into the device software with an ORION-specific port.
+
+This page describes what happens underneath your app. None of it is part of the
+[ABI](/reference/abi), and none of it is something an app may depend on.
+
+## Why an interpreter
+
+| Decision | Reason |
+|---|---|
+| **Fast interpreter**, not AOT or JIT | Apps arrive as portable WebAssembly and run without a compiler on the device. Nothing is generated at install time, so nothing executable is written to flash. |
+| **Built-in libc**, not WASI | An app gets arithmetic, memory and the ORION capability calls. It gets no file system, no clock-of-the-world and no sockets, because the sandbox should not have to defend a surface that was never needed. |
+| **No thread manager** | One app, one loop. Concurrency would add scheduling and shared state to a system whose safety argument rests on having neither. |
+| **Instruction metering on** | The only way to stop an app that never returns. |
+
+AOT, JIT, WASI, the thread manager and the other target architectures are excluded from the build
+entirely. The device software fails to compile if the effective configuration differs from the one
+the port was reviewed against.
+
+## The ORION port
+
+One upstream behaviour had to be adapted. WAMR's stock port asks the operating system for the
+current thread identity in a way that assumes the caller was created by the threading library.
+ORION calls WAMR from the main loop, which was not — and the mismatch **rebooted the board**, which
+was measured rather than reasoned about.
+
+The port replaces that one call so it returns the real task identity. In this configuration the
+value is only ever used as an identity — stored, logged and compared — never as a real thread
+handle. The file refuses to compile if a future change enables the features that would use it as
+one.
+
+## Memory
+
+Everything a User App touches lives in a **4 MiB arena in PSRAM**, created on the first launch and
+kept afterwards.
+
+| Placed in the arena | |
+|---|---|
+| The package buffer | The `.orionapp` as read from storage |
+| The loaded module | Parsed WebAssembly |
+| The instance and execution environment | Runtime bookkeeping |
+| The app's linear memory | 1–16 pages of 64 KiB, declared in the manifest |
+
+The app sees only its own linear memory. A pointer it passes to a capability call is checked against
+that memory on every call, and data is copied in and out rather than shared.
+
+<Note>
+  Keeping the arena rather than freeing it is deliberate. Over **25 launch / interact / back cycles**
+  the free internal memory, the free PSRAM, the largest free PSRAM block and the arena's own block
+  count were **identical before and after** — the measurement that matters for a device expected to
+  run for a long time.
+</Note>
+
+## Budgets
+
+Every lifecycle callback runs under two independent limits, both declared per app and both enforced
+by the supervisor.
+
+| Limit | Default | Range | Stops |
+|---|---|---|---|
+| **Instructions** | 20,000 | 1,000 – 1,000,000 | Code that never returns |
+| **Wall clock** | 100 ms | 10 – 200 ms | Time spent *anywhere*, including inside capability calls |
+
+The wall-clock budget counts time inside ORION's own calls, which is what makes it effective: an app
+cannot escape the instruction limit by asking the device to do expensive work on its behalf.
+
+Knowing the costs is how you stay inside the budget:
+
+| Operation | Measured |
+|---|---|
+| Full-screen clear | 28.9 ms |
+| Filled rectangle | up to 28.9 ms, growing with area |
+| One line of text | 32.9 ms worst case — 64 characters in the largest style |
+| Storage read, 4-byte value | ≈ 6 ms |
+| Storage write | 23–65 ms over 100 writes, median 31 ms |
+
+A full clear plus one long line is already two thirds of the default budget. That is why the SDK
+examples repaint only the regions that changed and perform at most one storage write per callback.
+
+## The cost of the sandbox
+
+| Loop rate | |
+|---|---|
+| Launcher, nothing running | 268 Hz |
+| A native app | 271 Hz |
+| The same app as WebAssembly | **252 Hz** |
+
+A 7.0 % cost for running third-party code in a sandbox, measured on the device.
+
+Launch to first frame is **62.6 ms**, of which the first draw is 52.5 ms — the runtime work
+(reading, verifying the digest, loading, instantiating, creating the environment and calling
+`on_enter`) totals under 10 ms. Teardown takes 0.35 ms.
+
+## When an app fails
+
+The supervisor stops the app, releases it, and returns to the launcher. **MissionOS continues.**
+
+Each of these was run on hardware:
+
+| Failure | Detected after | Back at the launcher in |
+|---|---|---|
+| Infinite loop | 6.1 ms, by the instruction limit | 178.6 ms |
+| Host-call storm | 115.5 ms, by the wall-clock budget | 301.5 ms |
+| Out-of-bounds access | 0.15 ms, by the memory trap | 171.3 ms |
+
+In every case resources were released, internal memory, PSRAM and the arena kept their integrity,
+another app launched afterwards, and **the device did not reboot**.
+
+## What this is not
+
+<Warning>
+  Nothing on this page is part of the ABI. The runtime, its configuration, memory placement,
+  measured timings and the supervisor's internals may all change without notice, and an app must not
+  depend on any of them.
+
+  The timings describe one development prototype. They are observations, not guarantees.
+</Warning>
+
+## Related
+
+<Columns cols={3}>
+  <Card title="Constraints and budgets" icon="gauge-high" href="/user-apps/concepts">
+    Writing an app that fits.
+  </Card>
+  <Card title="Security and containment" icon="shield" href="/user-apps/security">
+    What the sandbox promises.
+  </Card>
+  <Card title="ABI 1.0" icon="plug" href="/reference/abi">
+    The part that does not change.
+  </Card>
+</Columns>

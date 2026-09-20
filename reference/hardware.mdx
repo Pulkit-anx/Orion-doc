@@ -1,0 +1,143 @@
+---
+title: "Hardware platform"
+sidebarTitle: "Hardware"
+description: "The ORION hardware platform described by capability: what each part is, what MissionOS does with it, and what a User App can reach."
+icon: "microchip"
+---
+
+ORION is documented by **what its hardware does**, not by schematic. Wiring, pin assignments, bus
+addresses, component part numbers and electrical specifications are not published.
+
+This page describes the **development prototype** — the hardware MissionOS and the User App
+Platform run on today. It is a development platform, not a product.
+
+## Base hardware
+
+| | |
+|---|---|
+| **Processor** | ESP32-S3, dual-core, with Wi-Fi and Bluetooth LE integrated |
+| **Execution** | Single-threaded in practice — MissionOS runs in one loop |
+| **Memory** | Internal RAM plus 8 MB of external PSRAM. The User App Platform's 4 MiB runtime arena lives in PSRAM |
+| **Storage** | 16 MB of flash, divided between the device software, its assets, and a dedicated area for User App packages and their data |
+| **Power** | USB |
+
+## Display and touch
+
+The instrument panel, and the canvas a User App draws on.
+
+| | |
+|---|---|
+| **Panel** | 1.69-inch colour LCD, 280 × 240, used in landscape, RGB565 |
+| **Touch** | Capacitive, single-touch |
+| **Drawing** | Immediate — there is no frame buffer. A full clear takes about 29 ms |
+| **MissionOS** | Every screen; the three-zone [layout grid](/missionos/navigation#the-layout-grid) |
+| **User Apps** | The `display` capability — clear, filled rectangles, one line of text; and `input` — taps and swipes |
+
+Gestures are classified when the finger lifts. The left-edge back swipe belongs to MissionOS and is
+never delivered to an app. There is no multi-touch.
+
+## Motion
+
+| | |
+|---|---|
+| **Sensor** | Six-axis: accelerometer and gyroscope |
+| **Available** | Acceleration on three axes, pitch and roll, g-force and peak g |
+| **MissionOS** | Level, Motion Lab, Dice, and the g-force tile on the Sensor Hub |
+| **User Apps** | The `motion` capability — a copy of the latest acceleration and tilt sample, with a sequence number |
+
+This is the sensing that is fully live end to end: the reading was cross-checked on hardware against
+the device's own value while an app was running.
+
+**Not available:** a magnetometer. Without one there is no compass heading, so the Compass screen
+presents prototype values. A nine-axis sensor is part of the successor design.
+
+## Audio
+
+| | |
+|---|---|
+| **Input** | A microphone, sampled for level |
+| **Output** | An amplifier for tones and stored sounds |
+| **MissionOS** | Sound Meter, the sound tile on the Sensor Hub, Morse Studio playback, system sounds |
+| **User Apps** | No access in ABI 1.0 |
+
+Sound level is **relative and uncalibrated** — it is not a sound level meter, and the screen says so.
+There is no frequency spectrum: the design shows frequency bars, and they are not implemented.
+
+## Sensors
+
+| Capability | On the prototype | Notes |
+|---|---|---|
+| **Ambient light** | A driver exists; no light sensor responds | Light and Colour therefore has no reading to show. Optical sensing is part of the successor design |
+| **Environment** — temperature, humidity, pressure, air quality | Not fitted | Weather, Air Quality and Altimeter present prototype values. Any future air-quality index would be VOC-based — not a particulate or health measurement |
+| **Positioning** | Not fitted | GPS, Beacon, Sun & Sky and ISS Tracker present prototype values |
+| **Timekeeping** | No clock driver | MissionOS shows a fixed time. A User App gets time since start, not calendar time |
+| **Battery measurement** | Not fitted | The device is USB-powered; battery readings are prototype values |
+
+<Note>
+  Every screen above is **built and runs**. What is missing is the sensor behind it, not the
+  interface — see [the data model](/missionos/data-model) for why those are separate, and the
+  [screen reference](/missionos/screens) for the state of each one.
+</Note>
+
+## Connectivity
+
+| | |
+|---|---|
+| **Wi-Fi and Bluetooth LE** | The processor supports both. The device software does not use them, so Wi-Fi Scanner and the BLE-based applications present prototype values |
+| **Long-range radio** | Not fitted. LoRa Messenger, Ground Station, Range Test and Beacon present prototype values |
+| **USB** | Power, the serial console, and the connection the SDK installs packages over |
+| **User Apps** | No network access of any kind in ABI 1.0 |
+
+If a long-range radio is fitted in future, the only range statement ORION makes is **up to 1 km
+line-of-sight, outdoors**.
+
+## Controls and feedback
+
+The interface was specified for a console with two knobs and two buttons, an indicator light and a
+vibration motor. **The prototype has none of them** and there is no driver for any of them, so
+MissionOS is operated entirely by touch.
+
+Two games steer with a knob, so they run but are not playable. Everything else has a touch path.
+The designed control grammar and feedback language are documented in
+[navigation](/missionos/navigation#designed-physical-controls) and the
+[design language](/missionos/design-language#light-and-haptic-language).
+
+**Design User Apps for touch.** An app receives taps and swipes, and nothing else.
+
+## What a User App can reach
+
+| Hardware | Access in ABI 1.0 |
+|---|---|
+| Display | `display` — clear, rectangles, one-line text |
+| Touch | `input` — tap and swipe gestures |
+| Motion | `motion` — acceleration and tilt; no gyroscope or magnetometer data |
+| Flash storage | `storage` — a private key/value store |
+| Time since start, logging, redraw | `system` |
+| **Everything else** | **No access** |
+
+An app never touches a driver, a bus or a pin. New device capabilities reach apps only as new
+capabilities in a later ABI version.
+
+## Hardware status
+
+| Capability | State |
+|---|---|
+| Processor, memory, storage | `[VERIFIED]` |
+| Display and touch | `[VERIFIED]` |
+| Motion — six-axis | `[VERIFIED]` |
+| Audio in and out | `[IMPLEMENTED]` |
+| Ambient light | `[IMPLEMENTED]` driver; no sensor responds |
+| Environment, positioning, timekeeping, battery, long-range radio | `[NOT IMPLEMENTED]` |
+| Wi-Fi and Bluetooth LE | `[NOT IMPLEMENTED]` in the device software |
+| Physical controls, indicator light, vibration | `[NOT IMPLEMENTED]`; `[DESIGNED]` in the specification |
+
+Full detail, including measured performance: [Development status](/overview/status).
+
+## Product direction
+
+A modular successor design would move several of the capabilities above into attachable modules —
+long-range radio, environmental sensing, optics, audio — on a base unit with positioning,
+timekeeping, card storage and rechargeable power built in.
+
+None of it exists, and no availability, pricing, runtime figure or ingress-protection rating is
+published. The interface for attaching your own hardware is [not published yet](/develop/payloads).

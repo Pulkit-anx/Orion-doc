@@ -1,0 +1,79 @@
+---
+title: "The User App SDK"
+description: "What is in the ORION User App SDK Alpha, what it requires, and the orion command."
+sidebarTitle: "SDK overview"
+icon: "toolbox"
+tag: "VERIFIED"
+---
+
+The **ORION User App SDK Alpha** is everything you need to write, build, package and install apps: C headers, a small runtime linked into every app, the `orion` command and examples.
+
+<Warning>
+  **Alpha**
+
+  - API 1.0, C only.
+  - Packages are **not signed**.
+  - Apps install over USB on ORION **developer firmware**.
+  - No app store, no over-the-air install, no simulator.
+</Warning>
+
+## Contents
+
+| Path | What it is |
+|---|---|
+| `include/orion/orion.h` | The whole public API. Include this one header. |
+| `include/orion/app.h` | Lifecycle, time, developer log, redraw requests |
+| `include/orion/display.h` | Drawing and the ORION palette |
+| `include/orion/touch.h` | Tap and swipe gestures |
+| `include/orion/imu.h` | Acceleration and tilt |
+| `include/orion/storage.h` | App-private key/value storage |
+| `include/orion/util.h` | `memcpy` and friends, number formatting |
+| `include/orion/types.h` | Status codes and import/export macros |
+| `src/orion_runtime.c` | The freestanding runtime linked into every app |
+| `abi/orion_api_1.json` | ABI 1.0 in machine-readable form |
+| `bin/orion` | The `orion` command |
+| `examples/` | `hello_orion`, `tap_counter`, `motion` |
+| `tests/` | The SDK's own test suite |
+| `docs/` | Guides and reference (this site covers the same material) |
+
+Paths are relative to the SDK directory, `sdk/`, in the ORION developer source.
+
+## Requirements
+
+**Tested with:**
+
+- wasi-sdk 34 (clang 23.1)
+- Python 3.12
+- pyserial, for the device commands
+- ORION developer firmware implementing API 1.0 with app storage
+- macOS with Apple silicon
+
+**Toolchain lookup.** `orion` looks for wasi-sdk in `--toolchain`, then the `ORION_WASI_SDK` environment variable, then `~/.orion/toolchains/wasi-sdk-*`.
+
+**Python.** `sdk/bin/orion` runs `python3`. Set `ORION_PYTHON` to use a different interpreter, for example one with pyserial installed.
+
+## The `orion` command
+
+| Command | What it does | Needs a device |
+|---|---|---|
+| `orion doctor` | Checks the SDK, Python, the toolchain and pyserial | No |
+| `orion build [PROJECT]` | Compiles, validates and packages an app. `PROJECT` defaults to the current directory | No |
+| `orion inspect PACKAGE` | Shows and re-checks an `.orionapp` | No |
+| `orion install PACKAGE --port PORT [--launch] [--expect-mac MAC]` | Installs a package over USB, optionally launching it | Yes |
+| `orion launch APP_ID --port PORT [--expect-mac MAC]` | Opens an installed app | Yes |
+| `orion uninstall APP_ID --port PORT [--expect-mac MAC]` | Removes an app and its data | Yes |
+
+The global option `--toolchain DIR` selects a wasi-sdk directory. It goes before the command name. Every command exits with status 0 on success and a non-zero status on an error. Full details: [SDK and CLI reference](/reference/sdk).
+
+## What the SDK does not give an app
+
+Apps are separated from the operating system. The SDK exposes no MissionOS screens, UI framework or data model; no drivers; no I²C, SPI or GPIO; no operating-system tasks; no WebAssembly runtime internals; and no files or firmware memory. An app sees its own memory and the calls in `<orion/orion.h>`, and nothing else.
+
+## Alpha limitations
+
+- **Unsigned packages, developer firmware only.** Any USB host with the developer connection can install an app.
+- **C only.** No C library and no `malloc`.
+- **One app runs at a time**, in ORION's main loop. It is not real-time.
+- **Drawing and storage writes take real time.** See [budgets and costs](/user-apps/concepts#budgets-and-costs).
+- **No simulator.** Test on a device.
+- **Tested only on macOS with Apple silicon.** Linux and Windows are not tested; there is no C++ SDK.

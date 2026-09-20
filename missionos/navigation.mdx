@@ -1,0 +1,138 @@
+---
+title: "Navigation grammar"
+sidebarTitle: "Navigation"
+description: "How MissionOS is operated: the layout grid, the touch and gesture set, the status and hint bars, and the escape rules that work on every screen."
+icon: "hand-pointer"
+---
+
+MissionOS has **one navigation grammar, identical on every screen**. An application may add context
+actions; it may never remap the global set. That is what makes 47 screens feel like one device.
+
+## The layout grid
+
+The panel is landscape, 280 wide by 240 high, and every screen renders into the same three zones.
+
+| Zone | Rect (x, y, w, h) | Content |
+|---|---|---|
+| **Status bar** | 0, 0, 280, 18 | Time, radios, positioning, logging indicator, battery |
+| **Content** | 0, 18, 280, 198 | The screen itself |
+| **Hint bar** | 0, 216, 280, 24 | Contextual labels for the physical controls |
+
+Full-bleed screens — torch, games, the paint canvas, the armed field face, the charge face — may
+hide the status bar. It returns on any input for three seconds.
+
+## Touch and gesture
+
+This is the operating set on the development prototype today.
+
+| Gesture | Action |
+|---|---|
+| **Tap** | Select or activate |
+| **Long-press** (600 ms) | Context menu |
+| **Swipe right from the left edge** | Back, one level |
+| **Swipe left / right on Home** | Previous / next Home card |
+| **Swipe down from the status bar** | Quick settings, over any screen |
+| **Swipe up from the hint bar** | Launcher, from Home and instruments |
+| **Double-tap** (screen off) | Wake |
+
+<Note>
+  Gestures are classified when your finger **lifts**, not when it lands, so a tap and the start of a
+  swipe are never confused. There is no multi-touch and no pinch.
+
+  The left-edge back swipe is a distinct gesture from an ordinary right-swipe, so a screen that uses
+  right-swipes for its own purpose can never mistake one for the other. It always belongs to
+  MissionOS — a User App never receives it.
+</Note>
+
+## The status bar
+
+Left to right: the clock; a logging dot that pulses red while a session is writing; a long-range
+radio icon; a Wi-Fi icon with signal arcs; a Bluetooth icon; a positioning icon with a satellite
+count; and a battery pill with a percentage and a charge glyph.
+
+<Frame caption="The status bar sits above every chromed screen">
+  <img src="/images/screens/I1-sensor-hub.png" alt="Sensor Hub with the status bar across the top showing the clock, radio icons and battery." />
+</Frame>
+
+## The hint bar
+
+Three fixed slots, rendered as small chips, naming what each physical control does on this screen.
+Empty slots are hidden. The Weather instrument, for example, offers scroll, range and log-point.
+
+## Designed physical controls
+
+The interface was specified for a console with **two knobs and two buttons** alongside the touch
+panel, and the hint bar exists to label them.
+
+| Input | Short press | Long press |
+|---|---|---|
+| Knob A rotate | Scroll, move focus, primary value | — |
+| Knob A push | Select / OK / toggle | Context menu |
+| Knob B rotate | Secondary value, switch tab or category | — |
+| Knob B push | Context action, labelled in the hint bar | — |
+| Button B1 | Back, one level | Home |
+| Button B2 | The screen's primary action | Screenshot |
+
+<Warning>
+  **The development prototype has none of these.** There is no knob, no button and no driver for
+  either, so every control above is design only, and the hint-bar labels on the design renders name
+  controls that do not exist.
+
+  Two games — Snake and Breakout — steer with a knob, so they run but are not playable. Everything
+  else has a touch path.
+
+  **Design User Apps for touch.** A User App receives taps and swipes, and nothing else.
+</Warning>
+
+## Escape rules
+
+Three rules hold everywhere, and they are the reason the device is hard to get lost in:
+
+<Steps>
+  <Step title="Back always goes up one level">
+    The left-edge swipe, on every screen, including out of a User App.
+  </Step>
+  <Step title="Back-and-hold always returns Home">
+    From any depth, in any application.
+  </Step>
+  <Step title="Quick settings never leaves the screen underneath">
+    It is an overlay. Dismissing it returns you exactly where you were.
+  </Step>
+</Steps>
+
+Back navigation is composed at each step rather than held in a stack: a screen records where it was
+opened from, so hierarchical back works without the device tracking a global history.
+
+## Canonical paths
+
+The routes the interface was designed around:
+
+| Thread | Path |
+|---|---|
+| **Instrument** | Home → swipe up → Launcher → category → application |
+| **Hub shortcut** | Home card → Sensor Hub → tap a tile → that instrument. Back returns to the Hub, not the launcher |
+| **Logging** | Data Logger setup → start → active session → stop → summary → the session appears in Files |
+| **Field** | Field Logging config → arm → low-power armed face → disarm → debrief |
+| **Mission** | Missions list → briefing → step runner → debrief → saved session |
+| **Ground station** | Listen → frame list → frame detail |
+
+## Wake and sleep
+
+The screen dims after 20 seconds idle and turns off after 45, both adjustable. Any input, a
+double-tap, or attaching USB wakes it. While a logging or field session is active, sleep follows the
+session's profile rather than the interface timer — a design decision that stops the device sleeping
+mid-measurement.
+
+## Next
+
+<Columns cols={3}>
+  <Card title="The launcher" icon="grid" href="/missionos/launcher">
+    Where every application lives.
+  </Card>
+  <Card title="Screen reference" icon="table-list" href="/missionos/screens">
+    All 47 screens.
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/support/troubleshooting">
+    Something not behaving as described here?
+  </Card>
+</Columns>

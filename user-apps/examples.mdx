@@ -1,0 +1,225 @@
+---
+title: "Examples"
+description: "The three User App examples in the SDK — Tap Counter, Motion and Hello ORION — and the techniques each one shows."
+icon: "code"
+tag: "VERIFIED"
+---
+
+The SDK includes three examples in `sdk/examples/`. Build any of them with `orion build`:
+
+```bash
+sdk/bin/orion build sdk/examples/tap_counter
+```
+
+| Example | Capabilities | Shows |
+|---|---|---|
+| **Tap Counter** | system, display, input, storage | The smallest useful app: input, storage, partial redraw |
+| **Motion** | system, display, motion | Sampling a sensor on a timer, static layout, value-only redraws, logging |
+| **Hello ORION** | system, display, input, motion, storage | Every capability, dirty regions, frame slicing, queued storage writes |
+
+## Tap Counter
+
+`sdk/examples/tap_counter` — counts taps and keeps the count in app storage.
+
+```json title="orion.json"
+{
+  "id": "dev.orion.example.tapcounter",
+  "name": "SDK Tap Counter",
+  "version": "1.0.0",
+  "category": "APPS",
+  "api": "1.0",
+  "capabilities": ["system", "display", "input", "storage"],
+  "limits": {
+    "memory_pages": 1,
+    "instructions": 20000,
+    "callback_budget_ms": 100,
+    "storage_quota_bytes": 256
+  },
+  "description": "Counts taps and keeps the count in app storage",
+  "author": "ANX Labs",
+  "icon": "icon.pbm",
+  "build": { "sources": ["src/*.c"], "stack_bytes": 8192, "werror": true }
+}
+```
+
+```c title="src/main.c"
+#include <orion/orion.h>
+
+static int32_t count;
+static int full_frame;
+
+void orion_app_on_enter(void)
+{
+    int32_t stored;
+    if (orion_storage_read_str("tap_count", &stored, sizeof stored) == (int32_t)sizeof stored) {
+        count = stored;
+    }
+    full_frame = 1;
+}
+
+void orion_app_update(void)
+{
+    orion_touch_event_t touch;
+    if (orion_touch_read(&touch) != ORION_OK || touch.gesture != ORION_GESTURE_TAP) {
+        return;
+    }
+    ++count;
+    if (orion_storage_write_str("tap_count", &count, sizeof count) != ORION_OK) {
+        orion_log_str("tap: storage write failed");
+    }
+    orion_request_redraw();
+}
+
+void orion_app_draw(void)
+{
+    if (full_frame) {
+        orion_display_clear(ORION_COLOR_BACKGROUND);
+        orion_display_text_str(24, 28, "TAP COUNTER", ORION_COLOR_TEXT, ORION_TEXT_ROW);
+        orion_display_fill_rect(24, 58, 232, 2, ORION_COLOR_ACCENT);
+        orion_display_text_str(24, 212, "SAVED IN APP STORAGE", ORION_COLOR_MUTED, ORION_TEXT_MICRO);
+        full_frame = 0;
+    } else {
+        orion_display_fill_rect(24, 90, 232, 48, ORION_COLOR_BACKGROUND);
+    }
+
+    char line[24];
+    int32_t n = orion_copy_str(line, "Taps: ");
+    n += orion_format_int(line + n, count);
+    orion_display_text(24, 96, line, n, ORION_COLOR_TEXT, ORION_TEXT_HERO_COMPACT);
+}
+```
+
+**Technique:** the first frame clears the screen and draws the static layout. Every later frame erases only the count's region and redraws the number, which is far cheaper than clearing the screen.
+
+## Motion
+
+`sdk/examples/motion` — live acceleration and tilt, five times a second.
+
+```c title="src/main.c"
+#include <orion/orion.h>
+
+#define SAMPLE_PERIOD_MS 200
+#define LOG_PERIOD_MS 1000
+#define VALUE_X 104
+
+static orion_imu_sample_t imu;
+static int32_t last_sample_ms;
+static int32_t last_log_ms;
+static int layout_drawn;
+
+void orion_app_on_enter(void)
+{
+    orion_imu_read(&imu);
+    layout_drawn = 0;
+}
+
+void orion_app_update(void)
+{
+    int32_t now = orion_time_ms();
+    if (now - last_sample_ms < SAMPLE_PERIOD_MS) {
+        return;
+    }
+    last_sample_ms = now;
+    orion_imu_read(&imu);
+    orion_request_redraw();
+
+    if (now - last_log_ms >= LOG_PERIOD_MS) {
+        last_log_ms = now;
+        char line[96];
+        int32_t n = orion_copy_str(line, "motion ax_mg=");
+        n += orion_format_int(line + n, imu.ax_mg);
+        n += orion_copy_str(line + n, " az_mg=");
+        n += orion_format_int(line + n, imu.az_mg);
+        n += orion_copy_str(line + n, " pitch_cdeg=");
+        n += orion_format_int(line + n, imu.pitch_cdeg);
+        n += orion_copy_str(line + n, " seq=");
+        n += orion_format_int(line + n, (int32_t)imu.sequence);
+        orion_log(line, n);
+    }
+}
+
+void orion_app_draw(void)
+{
+    static const char *const labels[5] = { "AX", "AY", "AZ", "PITCH", "ROLL" };
+    static const int32_t rows[5] = { 50, 82, 114, 146, 178 };
+
+    if (!layout_drawn) {
+        orion_display_clear(ORION_COLOR_BACKGROUND);
+        orion_display_text_str(20, 12, "MOTION", ORION_COLOR_TEXT, ORION_TEXT_ROW);
+        orion_display_text_str(110, 16, "orion_motion_1.snapshot", ORION_COLOR_MUTED, ORION_TEXT_MICRO);
+        for (int i = 0; i < 5; ++i) {
+            orion_display_text_str(20, rows[i] + 4, labels[i], ORION_COLOR_MUTED, ORION_TEXT_SMALL);
+            orion_display_text_str(230, rows[i] + 4, i < 3 ? "g" : "deg", ORION_COLOR_MUTED, ORION_TEXT_SMALL);
+        }
+        orion_display_text_str(20, 214, "SEQ", ORION_COLOR_MUTED, ORION_TEXT_MICRO);
+        layout_drawn = 1;
+        orion_request_redraw(); /* values in the next frame, inside a fresh budget */
+        return;
+    }
+
+    const int32_t values[5] = { imu.ax_mg, imu.ay_mg, imu.az_mg, imu.pitch_cdeg, imu.roll_cdeg };
+    char text[24];
+    for (int i = 0; i < 5; ++i) {
+        int32_t n = orion_format_fixed(text, values[i], i < 3 ? 3 : 2);
+        orion_display_fill_rect(VALUE_X, rows[i], 120, 26, ORION_COLOR_BACKGROUND);
+        orion_display_text(VALUE_X, rows[i], text, n, ORION_COLOR_TEXT, ORION_TEXT_ROW);
+    }
+    int32_t n = orion_format_int(text, (int32_t)imu.sequence);
+    orion_display_fill_rect(60, 210, 120, 16, ORION_COLOR_BACKGROUND);
+    orion_display_text(60, 214, text, n, ORION_COLOR_MUTED, ORION_TEXT_MICRO);
+}
+```
+
+**Techniques:**
+
+- **Sample on a timer, not every update.** `update` runs hundreds of times a second; the sensor is read five times a second.
+- **Layout and values in separate frames.** The first `draw` paints the static layout and requests another redraw, so the values are painted in a fresh time budget.
+- **Fixed-point display.** `orion_format_fixed` turns milli-g and centi-degrees into readable decimals without floating point.
+
+## Hello ORION
+
+`sdk/examples/hello_orion` uses every capability: a tap count, a tilt readout, the last gesture, and storage that survives exit and power-off. It is about 240 lines, and shows the three habits that keep a larger app inside its budget.
+
+**Dirty regions.** Each part of the screen has a flag. Input and sensor changes set flags; `draw` repaints only flagged regions.
+
+**Frame slicing.** `draw` stops starting new regions after a time slice and requests another redraw for the rest:
+
+```c
+#define DRAW_SLICE_MS 45     /* a clear costs about 29 ms; large text up to 33 ms */
+
+void orion_app_draw(void)
+{
+    static const struct {
+        uint32_t flag;
+        void (*paint)(void);
+    } regions[] = {
+        { DIRTY_FRAME, draw_frame },
+        { DIRTY_COUNT, draw_count },
+        { DIRTY_TILT, draw_tilt },
+        { DIRTY_GESTURE, draw_gesture },
+    };
+
+    int32_t start = orion_time_ms();
+    for (uint32_t i = 0; i < sizeof regions / sizeof regions[0]; ++i) {
+        if (!(dirty & regions[i].flag)) {
+            continue;
+        }
+        if (orion_time_ms() - start >= DRAW_SLICE_MS) {
+            break; /* the rest is drawn in the next frame */
+        }
+        regions[i].paint();
+        dirty &= ~regions[i].flag;
+    }
+    if (dirty) {
+        orion_request_redraw();
+    }
+}
+```
+
+**Queued storage.** `on_enter` only reads. Changes set bits in a pending set, and `update` performs at most one write or delete per call. `on_exit` flushes one last pending write. The pattern is shown in [Storage](/user-apps/storage#a-safe-pattern).
+
+**Tilt with hysteresis.** Motion is checked four times a second, and the tilt region is redrawn only when pitch or roll has moved by half a degree.
+
+<Tip>
+  Swipe down in Hello ORION to reset the count. Swipe from the left edge to leave; the count and the number of launches are still there next time.
+</Tip>

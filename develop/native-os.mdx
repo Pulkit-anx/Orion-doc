@@ -1,0 +1,125 @@
+---
+title: "Native OS architecture"
+sidebarTitle: "Native OS"
+description: "How MissionOS is built underneath the interface: the screen system, the shared data model, the UI framework and the hardware layer."
+icon: "layer-group"
+---
+
+This page describes how MissionOS is built. It is background for understanding the platform — not a
+development guide, because the device software is not something an external developer builds.
+
+<Note>
+  If you want to **write software for ORION**, you want [User Apps](/user-apps). The device software
+  source is not public, and adding a screen to it means rebuilding and reinstalling the whole
+  system. See [Native apps vs User Apps](/develop/native-vs-user-apps).
+</Note>
+
+## The shape of it
+
+MissionOS is single-threaded. There are no background tasks, no interrupts and no locks in its own
+code — everything happens in one loop, in a fixed order.
+
+<Steps>
+  <Step title="Read">
+    The touch panel and the fitted sensors are read.
+  </Step>
+  <Step title="Classify">
+    The touch becomes a tap or a swipe, in the same pass it was read, so a screen never sees input
+    one frame late.
+  </Step>
+  <Step title="Refresh">
+    Live readings are written into the shared data model.
+  </Step>
+  <Step title="Run one screen">
+    Exactly one screen is active. It handles the gesture and repaints what changed.
+  </Step>
+</Steps>
+
+Everything is polled. That is a deliberate simplification: with one loop and no concurrency, the
+question "what is the state of the device right now?" always has one answer.
+
+## The screen system
+
+A screen is an object with four operations — enter, update, exit, and a draw convention — and one
+field recording where Back should return to.
+
+Navigation is deliberately not a stack. A single pointer holds the active screen, and each screen
+remembers its own opener. Composing that at every step reproduces hierarchical back navigation
+without the system maintaining global history, which means a screen can be entered from anywhere
+without the navigator knowing about it in advance.
+
+Screens are grouped by category in the source, not one file per screen, and each keeps its own
+layout constants.
+
+## The data model
+
+One global structure holds every reading. Drivers write into it in exactly one place; screens read
+from it and never call a driver.
+
+This is the most consequential decision in the system:
+
+- a screen can be built, laid out and tested before its sensor exists;
+- wiring one sensor lights it up on every screen that shows it, at once;
+- there is a single answer to "where does this number come from".
+
+Interface state — which row is focused, how far a list is scrolled, an animation's phase —
+deliberately stays in the screen that owns it, not in the shared model.
+
+<Card title="Where MissionOS data comes from" icon="database" href="/missionos/data-model" horizontal>
+  The model in detail, and which readings are live on the development prototype.
+</Card>
+
+## The UI framework
+
+Every drawing call goes through one framework layer: text in nine generated font tables, shapes,
+icons, images, text measurement, and composites such as the status bar, hint chips, arc gauges and
+sparklines.
+
+Two rules govern it:
+
+- **Never repaint the whole screen on a tick.** A full clear is a real full-screen fill and costs
+  tens of milliseconds. Screens erase only the region that changed, sized to the widest the value
+  can ever render.
+- **Measure text, never guess.** Text is positioned by the top of its ink box, which is taller than
+  the nominal point size.
+
+Colours are theme tokens, never literals — the same eleven tokens documented in the
+[design language](/missionos/design-language).
+
+## The hardware layer
+
+Drivers sit below the framework and above the device. They expose small, specific interfaces —
+is the screen touched, what is the acceleration, what is the sound level — and nothing above them
+knows how the hardware is wired.
+
+That boundary is why the [hardware reference](/reference/hardware) can describe the device by
+capability rather than by schematic: the capability is the interface the rest of the system sees.
+
+## Native in-runtime apps
+
+The device software also contains a small, older pattern that predates the User App Platform: a
+simplified application shape wrapped by an adapter so it appears in the launcher like any other
+screen.
+
+<Warning>
+  These are **not** User Apps. They are compiled into the device software, fully trusted, and use
+  none of the ABI or the capability checks. The naming overlap is unfortunate and worth knowing
+  about — see [Native apps vs User Apps](/develop/native-vs-user-apps).
+</Warning>
+
+## Where the User App Platform attaches
+
+The platform is a peer of the screen system, not a layer inside it. A running User App is hosted by
+a dedicated screen, so from the loop's point of view an app is simply the active screen — while the
+capability API, the supervisor, the installer, the registry and per-app storage sit beside
+MissionOS rather than inside it.
+
+<Card title="The runtime" icon="microchip" href="/user-apps/runtime" horizontal>
+  What executes the app, and what stops it when it misbehaves.
+</Card>
+
+## Status
+
+Everything on this page is implemented and running on the development prototype. Which parts have
+been verified on hardware, and which capabilities the prototype does not yet carry, is recorded on
+[Development status](/overview/status).

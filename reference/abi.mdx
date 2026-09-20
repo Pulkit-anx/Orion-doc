@@ -1,0 +1,238 @@
+---
+title: "ABI 1.0 reference"
+sidebarTitle: "ABI 1.0"
+description: "The frozen ORION User App ABI: imports, capabilities, exports, records, status codes, limits and versioning rules."
+icon: "plug"
+---
+
+This is the contract between a User App and ORION. **API 1.0 is frozen**: nothing on this page
+changes in 1.x. The tables below are generated from the SDK's machine-readable ABI, which the SDK
+test suite checks against the SDK headers and the device software.
+
+For explanations and examples, see [Capabilities](/user-apps/capabilities).
+
+## Calling convention
+
+- **One app at a time**, as 32-bit WebAssembly, run by ORION's WebAssembly interpreter in ORION's
+  main loop.
+- **Integers only.** Every import parameter and result is a WebAssembly `i32`.
+- **Pointers** are offsets into the app's own linear memory. They are checked on every call and used
+  only for that call; data is copied in and out. A range outside app memory stops the app — it is not
+  reported as a status.
+- **Results.** An import returns a non-negative value, or a negative status.
+
+## Capabilities
+
+Each import module belongs to one capability. The manifest's capability bits declare which modules an
+app may import.
+
+{/* GENERATED:abi-capabilities START */}
+
+| Capability | Bit | Import module |
+|---|---|---|
+| `system` | 1 | `orion_sys_1` |
+| `display` | 2 | `orion_display_1` |
+| `input` | 4 | `orion_input_1` |
+| `motion` | 8 | `orion_motion_1` |
+| `storage` | 16 | `orion_storage_1` |
+
+{/* GENERATED:abi-capabilities END */}
+
+## Imports
+
+{/* GENERATED:abi-modules START */}
+
+### `orion_sys_1`
+
+Capability `system` (bit 1).
+
+| Function | C function | Signature | Returns |
+|---|---|---|---|
+| `api_version` | `orion_api_version` | `() → i32` | (major &lt;&lt; 16) \| minor = 0x00010000 |
+| `time_ms` | `orion_time_ms` | `() → i32` | Milliseconds since start; wraps after about 24 days |
+| `log` | `orion_log` | `(ptr text, i32 length) → i32` | ORION_OK; ORION_ERR_LIMIT over 160 bytes |
+| `request_redraw` | `orion_request_redraw` | `() → i32` | ORION_OK |
+
+### `orion_display_1`
+
+Capability `display` (bit 2).
+
+| Function | C function | Signature | Returns |
+|---|---|---|---|
+| `clear` | `orion_display_clear` | `(i32 rgb565) → i32` | ORION_OK&lt;br />Only inside draw |
+| `fill_rect` | `orion_display_fill_rect` | `(i32 x, i32 y, i32 w, i32 h, i32 rgb565) → i32` | ORION_OK; ORION_ERR_INVALID_ARG out of range&lt;br />Only inside draw; \|x\|, \|y\| ≤ 1024; w, h 1–1024 |
+| `text` | `orion_display_text` | `(i32 x, i32 y, ptr text, i32 length, i32 rgb565, i32 style) → i32` | ORION_OK; ORION_ERR_LIMIT over 64 bytes; ORION_ERR_INVALID_ARG&lt;br />Only inside draw; one line, never wraps |
+
+### `orion_input_1`
+
+Capability `input` (bit 4).
+
+| Function | C function | Signature | Returns |
+|---|---|---|---|
+| `gesture_read` | `orion_input_gesture_read` | `(ptr event) → i32` | ORION_OK; ORION_ERR_INVALID_ARG if struct_size &lt; 16 |
+
+### `orion_motion_1`
+
+Capability `motion` (bit 8).
+
+| Function | C function | Signature | Returns |
+|---|---|---|---|
+| `snapshot` | `orion_motion_snapshot` | `(ptr sample) → i32` | ORION_OK; ORION_ERR_INVALID_ARG if struct_size &lt; 36 |
+
+### `orion_storage_1`
+
+Capability `storage` (bit 16).
+
+| Function | C function | Signature | Returns |
+|---|---|---|---|
+| `read` | `orion_storage_read` | `(ptr key, i32 key_length, ptr buffer, i32 capacity) → i32` | Bytes read; ORION_ERR_NOT_FOUND; ORION_ERR_LIMIT; ORION_ERR_INVALID_ARG |
+| `write` | `orion_storage_write` | `(ptr key, i32 key_length, ptr data, i32 length) → i32` | ORION_OK; ORION_ERR_NO_SPACE; ORION_ERR_LIMIT; ORION_ERR_IO |
+| `delete` | `orion_storage_delete` | `(ptr key, i32 key_length) → i32` | ORION_OK; ORION_ERR_NOT_FOUND |
+| `list` | `orion_storage_list` | `(i32 index, ptr name, i32 capacity) → i32` | Name length; ORION_ERR_NOT_FOUND past the last key; ORION_ERR_LIMIT; ORION_ERR_INVALID_ARG |
+
+_ABI 1.0 is frozen: 5 modules, 13 functions._
+
+{/* GENERATED:abi-modules END */}
+
+<Warning>
+  Any other import is refused at install: another module, a memory, table or global import, or a
+  wrong signature.
+</Warning>
+
+## Exports
+
+| Export | Required | Called |
+|---|---|---|
+| `void orion_app_update(void)` | Yes | On every pass of ORION's main loop |
+| `void orion_app_draw(void)` | Yes | After `on_enter`, then after an `update` that requested a redraw |
+| `void orion_app_on_enter(void)` | No | Once, when the app opens |
+| `void orion_app_on_exit(void)` | No | Once, when the user leaves with Back |
+
+**Order:** `on_enter` once; `draw` once; then on every pass `update`, followed by `draw` if a redraw
+was requested; `on_exit` once when the user leaves.
+
+<Note>
+  Back — the left-edge swipe — belongs to ORION and is never delivered to an app.
+
+  A module must not have a start function, or exports that run automatically when it is created.
+  Either one is rejected.
+</Note>
+
+## Records
+
+All records are little-endian.
+
+| Record | Size | Layout |
+|---|---|---|
+| Gesture (`orion_touch_event_t`) | 16 bytes | `u32 struct_size` (≥ 16 in, 16 out), `u32 gesture`, `i32 x`, `i32 y` — where the touch started |
+| Motion (`orion_imu_sample_t`) | 36 bytes | `u32 struct_size` (≥ 36 in, 36 out), `u32 flags` (0), `u32 timestamp_ms`, `u32 sequence`, `i32 ax_mg`, `i32 ay_mg`, `i32 az_mg`, `i32 pitch_cdeg`, `i32 roll_cdeg` |
+
+## Gestures
+
+{/* GENERATED:abi-gestures START */}
+
+| Gesture | Value |
+|---|---|
+| `none` | 0 |
+| `tap` | 1 |
+| `swipe_left` | 2 |
+| `swipe_right` | 3 |
+| `swipe_up` | 4 |
+| `swipe_down` | 5 |
+
+{/* GENERATED:abi-gestures END */}
+
+## Text styles
+
+Eight styles, largest first: 0 Hero, 1 HeroCompact, 2 Title, 3 Row, 4 Body, 5 Caption, 6 Small,
+7 Micro.
+
+## Status codes
+
+{/* GENERATED:abi-status START */}
+
+| Status | Value | Meaning |
+|---|---|---|
+| `ORION_OK` | `0` | Success |
+| `ORION_ERR_INVALID_ARG` | `-1` | Argument out of range or malformed |
+| `ORION_ERR_NOT_ALLOWED` | `-2` | Not allowed now, for example drawing outside draw |
+| `ORION_ERR_LIMIT` | `-3` | Over a size limit: buffer too small, text or log too long |
+| `ORION_ERR_NOT_FOUND` | `-4` | No such storage key, or list index past the end |
+| `ORION_ERR_IO` | `-5` | Storage failed |
+| `ORION_ERR_NO_SPACE` | `-6` | Storage quota or key limit reached |
+| `ORION_ERR_UNAVAILABLE` | `-7` | Service not present |
+
+{/* GENERATED:abi-status END */}
+
+## Fixed limits
+
+{/* GENERATED:abi-limits START */}
+
+| Limit | Value |
+|---|---|
+| Longest log message | 160 bytes |
+| Longest string drawn in one `text` call | 64 bytes |
+| Largest absolute coordinate | 1024 px |
+| Longest storage key | 32 bytes |
+| Largest stored value | 4096 bytes |
+| Storage keys per app | 16 keys |
+| Required exports | `orion_app_update`, `orion_app_draw` |
+| Optional exports | `orion_app_on_enter`, `orion_app_on_exit` |
+
+{/* GENERATED:abi-limits END */}
+
+## Limits an app declares
+
+| Manifest field | Range | Default |
+|---|---|---|
+| `limits.memory_pages` | 1–16 pages of 64 KiB | 1 |
+| `limits.instructions` | 1,000–1,000,000 per callback | 20,000 |
+| `limits.callback_budget_ms` | 10–200 ms per callback, including time inside imports | 100 |
+| `limits.wasm_stack_bytes` | 4,096–65,536 | 16,384 |
+| `limits.storage_quota_bytes` | 0–65,536; required with `storage` | — |
+
+A package may be at most 512 KiB. Exceeding a limit, a trap or a bad pointer stops the app; ORION
+shows an error, returns to the launcher and keeps running. `[VERIFIED]`
+
+## Display behaviour
+
+- 280 × 240, RGB565. Drawing calls work only inside `draw`; elsewhere they return
+  `ORION_ERR_NOT_ALLOWED`.
+- Text is one line. Characters that do not fit are dropped, and bytes outside printable ASCII are
+  drawn as `?`.
+
+## Storage behaviour
+
+- Keys are 1–32 characters of `a-z 0-9 _ -`; values up to 4 KiB; at most 16 keys.
+- The total is capped by the manifest quota.
+- A write replaces the whole value atomically.
+- Other apps cannot read it. An update keeps it; uninstall deletes it.
+
+## Versioning
+
+<AccordionGroup>
+  <Accordion title="API 1.0 does not change" icon="lock">
+    Its modules, names, signatures, records, values and behaviour stay as they are.
+  </Accordion>
+  <Accordion title="Additions raise the minor version" icon="plus">
+    A new capability module, or new functions in a new module, make it 1.x. Apps built for 1.0 keep
+    working.
+  </Accordion>
+  <Accordion title="Incompatible changes use new module names under API 2.0" icon="code-branch">
+    Device software may then carry both.
+  </Accordion>
+  <Accordion title="A package states the API it was built for" icon="tag">
+    ORION refuses a package whose API it does not implement.
+  </Accordion>
+</AccordionGroup>
+
+## Not part of the ABI
+
+<Warning>
+  Everything here may change without notice, and apps must not depend on it: ORION's runtime
+  internals, how installed packages and app data are stored, the USB developer connection's command
+  set, MissionOS screens and data, drivers and hardware buses, and measured timings.
+
+  Timings in this documentation describe the development prototype. They are observations, not
+  guarantees.
+</Warning>

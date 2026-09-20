@@ -1,0 +1,90 @@
+---
+title: "Status labels"
+description: "The status vocabulary: four platform states, and the two-axis model that describes MissionOS screens."
+icon: "tag"
+---
+
+ORION is in development. Some of it runs today on a development prototype; much of it is designed or
+planned. Every page and feature carries a label so you never have to guess which is which.
+
+**Read the labels literally.** A planned feature is never described as if it exists.
+
+## The four labels
+
+| Label | Meaning | What you can rely on |
+|---|---|---|
+| `[VERIFIED]` | Observed working on the development prototype. | It works, and someone watched it work. |
+| `[IMPLEMENTED]` | The software exists and runs. Hardware verification is **not** claimed. | The code path is real. The values it shows may not be. |
+| `[NOT IMPLEMENTED]` | No implementation exists. | Nothing. It is named only so its absence is explicit. |
+| `[DESIGNED]` | Specified in the design package; not built. | Intent only. Details may change. |
+| `[CONCEPT]` | Product direction, not designed in detail. | Nothing. It names a direction. |
+
+<Warning>
+  `[IMPLEMENTED]` is the label that catches people out. On this platform a screen can be complete,
+  responsive and good-looking while every number on it is a fixed demo value. That screen is
+  `[IMPLEMENTED]`, not `[VERIFIED]`.
+</Warning>
+
+## Screens carry two states, not one
+
+A MissionOS screen raises two separate questions, and answering only the second one distorts the
+first. The [screen reference](/missionos/screens) answers both.
+
+| Axis | Values | Question |
+|---|---|---|
+| **Interface** | Implemented · Designed · Specified, deferred | Does the screen exist and run? |
+| **Data** | Live · Live in part · Prototype values · Planned · On-device | Where do its values come from? |
+
+A screen that is built, laid out, navigable and drawing correctly is **Implemented**, even if every
+number on it is a prototype value. Calling such a screen "not implemented" would be wrong: the
+interface is finished, and the sensor is the thing that is missing.
+
+| Data value | Meaning |
+|---|---|
+| **Live** | Read from hardware on the development prototype |
+| **Live in part** | Some readings are live, others are not — the screen says which |
+| **Prototype values** | Fixed values set at start-up. Not measurements, however plausible |
+| **Planned** | Would come from hardware that does not exist yet |
+| **On-device** | Produced by the device software itself, such as interface state |
+
+## How the labels are assigned
+
+Labels come from an audit of the device software, the User App SDK and its recorded hardware
+validation. The audit uses a finer eight-value scale internally; this table is the exact mapping, so
+you can see what each published label does and does not carry.
+
+{/* GENERATED:status-map START */}
+
+| Label in the data | Published label | What the data adds |
+|---|---|---|
+| `working` | `[VERIFIED]` | — |
+| `built` | `[IMPLEMENTED]` | — |
+| `demo` | `[IMPLEMENTED]` | shows demo values |
+| `designed` | `[DESIGN]` | specified, not built |
+| `concept` | `[DESIGN]` | Rev02 concept |
+| `requires-module` | `[DESIGN]` | needs hardware that is not fitted |
+| `phase-2` | `[NOT IMPLEMENTED]` | deliberately deferred |
+| `not-implemented` | `[NOT IMPLEMENTED]` | — |
+
+{/* GENERATED:status-map END */}
+
+## Which reality a page describes
+
+- **Development prototype** — the hardware ORION's software and User App Platform run on today. It is
+  a development platform, not a product.
+- **Software platform** — MissionOS and the User App Platform, independent of any hardware revision.
+- **Design** — a planned successor. Its design is not frozen, and none of it exists.
+
+## What ORION does not claim
+
+Until something is verified and approved, this documentation makes these statements and no stronger
+ones:
+
+- **Power:** no battery runtime, charging time or ingress-protection rating is published.
+- **Modules:** attach and remove modules only while ORION is powered off. Modules are not hot-swappable.
+- **Certification:** ORION has no product certification. It is not space-qualified and not flight-qualified.
+- **Air quality:** the planned index is VOC-based. It is not a particulate or health measurement.
+- **Sound:** sound levels are relative and uncalibrated.
+- **Long-range radio:** up to 1 km line-of-sight, outdoors, with the radio module fitted. A base unit
+  alone has no long-range radio.
+- **App security:** the User App Platform is not production-secure; it is a developer platform.

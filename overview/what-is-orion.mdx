@@ -1,0 +1,134 @@
+---
+title: "What is ORION?"
+description: "ORION is a pocket-satellite instrument platform: hardware, the MissionOS interface, and a sandboxed application platform, built as one system."
+icon: "circle-question"
+---
+
+ORION is a handheld instrument built around an idea: a pocket satellite you hold in your hand, with
+an operating environment that treats every use as a mission.
+
+It is one system with three layers.
+
+<Columns cols={3}>
+  <Card title="The device" icon="microchip" href="/reference/hardware">
+    An ESP32-S3 handheld: a 280 × 240 colour touch panel, six-axis motion, a microphone and audio
+    output.
+  </Card>
+  <Card title="MissionOS" icon="tv" href="/missionos">
+    The interface: 47 specified screens in seven categories, one navigation grammar, and the
+    Ground Control design language.
+  </Card>
+  <Card title="User App Platform" icon="box" href="/user-apps">
+    A WebAssembly sandbox that runs applications you write, install over USB, and can remove again.
+  </Card>
+</Columns>
+
+## How the layers fit together
+
+```text
+┌─────────────────────────────────┬─────────────────────────────────┐
+│ MissionOS screens               │ User Apps                       │
+│ home · launcher · instruments   │ your apps, compiled to          │
+│ comms · tools · games · system  │ WebAssembly and sandboxed       │
+├─────────────────────────────────┼─────────────────────────────────┤
+│ UI framework and data model     │ Capability API · ABI 1.0        │
+│ drawing · navigation · theme    │ system · display · input ·      │
+│ shared readings                 │ motion · storage                │
+├─────────────────────────────────┴─────────────────────────────────┤
+│ ORION OS core                                                     │
+│ boot · screen manager · app runtime and supervisor · app storage  │
+├───────────────────────────────────────────────────────────────────┤
+│ Drivers                                                           │
+│ display · touch · motion · microphone · audio out                 │
+├───────────────────────────────────────────────────────────────────┤
+│ ESP32-S3 handheld hardware                                        │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+Two rules hold the design together:
+
+<AccordionGroup>
+  <Accordion title="One loop, one screen" icon="rotate">
+    MissionOS runs as a single loop. Each pass reads touch, classifies the gesture, refreshes the
+    shared readings, then runs exactly one active screen. No background tasks, no fixed frame rate.
+
+    A User App runs inside a dedicated app screen in that same loop — while it is open, it *is* the
+    active screen.
+  </Accordion>
+  <Accordion title="Screens read a model, never a driver" icon="database">
+    Every value a screen displays comes from one shared data model, and readings enter that model in
+    exactly one place. A screen is therefore complete whether or not the sensor behind it is fitted,
+    and wiring a sensor lights it up everywhere it appears at once.
+
+    This is why MissionOS could be built as a whole interface before the hardware was finished, and
+    why [the data model](/missionos/data-model) is worth understanding early.
+  </Accordion>
+</AccordionGroup>
+
+## What ORION is for
+
+The applications are grouped around what the device is meant to do:
+
+- **Measure.** Instruments for motion, orientation, sound, light, pressure and environment, with a
+  data logger that writes sessions you can take away.
+- **Communicate.** A long-range radio link between two units — one acting as the satellite, one as
+  the ground station — plus short-range scanning and infrared.
+- **Work in the field.** Armed logging sessions, a locator beacon, and guided missions with a brief
+  and a debrief.
+- **Look up.** Pass prediction, sun and sky, and on-device motion learning.
+- **Extend.** Your own applications, in the same launcher as the built-in ones.
+
+## The distinction that matters most
+
+Two different things are called "apps", and confusing them wastes time.
+
+|  | **MissionOS screen** | **ORION User App** |
+|---|---|---|
+| Written in | C++, as part of the device software | C, compiled to WebAssembly |
+| Lives in | the device software itself | an installed package on the device |
+| Added or changed by | rebuilding the whole device software | installing a package over USB |
+| Trust | fully trusted; runs as system code | sandboxed, capability-gated, budgeted |
+| Available APIs | anything internal | only the frozen [public ABI](/reference/abi) |
+| Can it stop the device? | yes | no — it is stopped and MissionOS continues |
+| Who writes them | ANX Labs | you |
+
+Only the right-hand column is something you can build today.
+[Native apps vs User Apps](/develop/native-vs-user-apps) has the full comparison.
+
+## What has been built
+
+The platform is real and running on a development prototype:
+
+| | |
+|---|---|
+| **MissionOS** | Boot, navigation, the launcher, the screen system, the UI framework, the touch and gesture layer |
+| **Sensing** | Six-axis motion and relative sound level, live; audio output; a light-sensor driver |
+| **User App Platform** | WAMR 2.4.5, the `.orionapp` format, the installer, registry, supervisor and per-app storage |
+| **Contract** | ABI 1.0, frozen and drift-checked against the firmware |
+| **Tooling** | The SDK Alpha: headers, a freestanding runtime, the `orion` command and three worked examples |
+| **Evidence** | Containment, storage, motion and launch-cycle behaviour measured on hardware |
+
+## Where it is going
+
+The device is a development prototype, not a product. Several instruments are specified and built
+but wait on sensors it does not carry, and a modular successor design exists on paper.
+
+Rather than repeat that on every page, it is collected in one place:
+
+<Card title="Development status" icon="list-check" href="/overview/status" horizontal>
+  What runs, what is measured, what is designed, and what is planned.
+</Card>
+
+## Next
+
+<Columns cols={3}>
+  <Card title="Explore MissionOS" icon="tv" href="/missionos">
+    The interface, in depth.
+  </Card>
+  <Card title="Write an app" icon="rocket" href="/user-apps/quickstart">
+    From an empty directory to running code.
+  </Card>
+  <Card title="Hardware" icon="microchip" href="/reference/hardware">
+    What the device can sense and do.
+  </Card>
+</Columns>

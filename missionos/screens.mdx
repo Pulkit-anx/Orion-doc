@@ -1,0 +1,491 @@
+---
+title: "Screen reference"
+sidebarTitle: "Screen reference"
+description: "Every MissionOS screen: what it is for, what it does, and where its values come from."
+icon: "table-list"
+mode: "wide"
+---
+
+MissionOS specifies **47 screens** across seven categories. This page covers all of them: what each
+one is for, what it does, and where its values come from.
+
+<Note>
+  **Each screen has two independent states, and they answer different questions.**
+
+  **Interface** — does the screen exist and run? *Implemented*, *Designed*, or *Specified, deferred*.
+
+  **Data** — where do its values come from? *Live* from hardware, *Prototype values*, *Planned*
+  hardware, or produced *On-device*.
+
+  A screen can be fully implemented and still show prototype values, because MissionOS reads every
+  reading from one shared model and a screen never talks to a sensor itself. That separation is the
+  design — see [the data model](/missionos/data-model).
+</Note>
+
+<Note>
+  The pictures are **design renders** at 1:1 device scale, not photographs. They were drawn against
+  an earlier control layout, so the hint bar naming physical controls has been removed from each
+  one. Screens whose render contradicts current behaviour are listed without a picture.
+</Note>
+
+{/* GENERATED:screens START */}
+
+## System
+
+<Columns cols={3}>
+  <Frame caption={"Home"}><img src="/images/screens/S2-home-watchface.png" alt={"Design render of the MissionOS home screen: a large split clock reading 09:44, the date, and temperature, humidity and air-quality chips."} /></Frame>
+  <Frame caption={"Launcher"}><img src="/images/screens/S3-app-launcher.png" alt={"Design render of the MissionOS launcher: a category rail (Instruments, Comms, Field, Space, Tools, Play, System) above a grid of instrument icons."} /></Frame>
+  <Frame caption={"Alerts"}><img src="/images/screens/S8-critical-battery.png" alt={"Design render of a critical battery alert: a red header reading \"Battery critical\", a progress bar and a Shut down button."} /></Frame>
+  <Frame caption={"Charge face"}><img src="/images/screens/S9-charge-sleep-face.png" alt={"Design render of the charge face: a battery icon at 78 percent with a charging symbol and the time."} /></Frame>
+</Columns>
+
+### Boot and self-test
+
+Splash screen and power-on checks.
+
+**Interface** Implemented · **Data** Prototype values
+
+The splash is built. Most self-test results are placeholders, so the boot sequence is not evidence that hardware works.
+
+### First-run wizard
+
+A short guided setup when ORION starts for the first time.
+
+**Interface** Implemented · **Data** Prototype values
+
+Runs at every start, because settings are not saved yet.
+
+### Home
+
+A clock face and swipeable cards. Swipe up for the launcher, down for Quick Settings.
+
+**Interface** Implemented · **Data** Prototype values
+
+Navigation works on the prototype. The clock, date and card values are prototype values, because there is no clock driver and no environmental or positioning hardware.
+
+### Launcher
+
+Seven categories of built-in screens and a User Apps tab.
+
+**Interface** Implemented · **Data** On-device
+
+Verified on the prototype, including the User Apps tab, which lists apps installed through the User App Platform.
+
+### Quick Settings
+
+An overlay for radios, torch, sound, haptics and brightness.
+
+**Interface** Implemented · **Data** Prototype values
+
+Opens with a swipe down from Home. The toggles change interface state only; they do not control radios or other hardware yet.
+
+### Settings
+
+Device, display, input and system preferences.
+
+**Interface** Implemented · **Data** Prototype values
+
+Settings are not saved and reset at every restart.
+
+### Power and battery
+
+Battery level, power source and power-save mode.
+
+**Interface** Implemented · **Data** Prototype values
+
+Shows prototype battery values. The prototype has no battery measurement, and ORION's rechargeable power system is part of the Rev02 concept.
+
+### Files
+
+Browse sessions, drawings and other stored data.
+
+**Interface** Implemented · **Data** On-device
+
+Reports on-device flash storage. microSD card support is planned for the Rev02 base unit and is not implemented.
+
+### Alerts
+
+Toasts, confirmation dialogs and critical full-screen alerts.
+
+**Interface** Implemented · **Data** On-device
+
+Alert presentation is built. The conditions that would raise real alerts, such as a low battery, are not measured yet.
+
+### Charge face
+
+A minimal face shown while charging or sleeping.
+
+**Interface** Implemented · **Data** Prototype values
+
+Shows a prototype charge state. Charging hardware is part of the Rev02 concept.
+
+### System update
+
+Check for and install firmware updates.
+
+**Interface** Implemented · **Data** Prototype values
+
+The screen exists. No firmware update mechanism is implemented.
+
+### App Link
+
+Pairing with a companion app.
+
+**Interface** Specified, deferred · **Data** —
+
+Not currently implemented. No companion app exists, and the launcher tile is disabled.
+
+## Instruments
+
+<Columns cols={3}>
+  <Frame caption={"Sensor Hub"}><img src="/images/screens/I1-sensor-hub.png" alt={"Design render of Sensor Hub: a three-by-three grid of tiles for temperature, humidity, pressure, air quality, light, sound, altitude, heading and g-force."} /></Frame>
+  <Frame caption={"Weather"}><img src="/images/screens/I2-weather.png" alt={"Design render of the Weather screen: temperature 26.0 °C, humidity 58 percent and pressure 908.0 hPa with a trend line."} /></Frame>
+  <Frame caption={"Air Quality"}><img src="/images/screens/I3-air-quality.png" alt={"Design render of the Air Quality screen: an index of 24 labelled Good, marked as a VOC-based index, with a trend line."} /></Frame>
+  <Frame caption={"Altimeter"}><img src="/images/screens/I4-altimeter.png" alt={"Design render of the Altimeter screen: pressure altitude 916 m with a vertical tape and a note that GNSS altitude will read differently."} /></Frame>
+  <Frame caption={"Compass"}><img src="/images/screens/I5-compass.png" alt={"Design render of the Compass screen: a dial reading 054 degrees north-east with an \"Uncalibrated\" prompt."} /></Frame>
+  <Frame caption={"Level"}><img src="/images/screens/I6-level.png" alt={"Design render of the Level screen: a circular bubble level with pitch +0.5° and roll +2.5°."} /></Frame>
+  <Frame caption={"Motion Lab"}><img src="/images/screens/I7-motion-lab.png" alt={"Design render of Motion Lab: three live acceleration traces labelled ax, ay and az, reading 1.06 g."} /></Frame>
+  <Frame caption={"GPS"}><img src="/images/screens/I8-gps.png" alt={"Design render of the GPS screen: a 3D fix banner, latitude and longitude, altitude, speed and signal bars per satellite."} /></Frame>
+  <Frame caption={"Sound Meter"}><img src="/images/screens/I10-sound-meter.png" alt={"Design render of the Sound Meter: an arc gauge reading 43 on a relative scale, labelled \"Relative scale, uncalibrated — not an SPL meter\", above frequency bars."} /></Frame>
+  <Frame caption={"Data Logger"}><img src="/images/screens/I11-data-logger.png" alt={"Design render of the Data Logger setup: sensor chips, a 5-second interval, a session name and a Start button."} /></Frame>
+</Columns>
+
+### Sensor Hub
+
+Nine tiles summarising every instrument. Tap a tile to open it.
+
+**Interface** Implemented · **Data** Live in part
+
+The motion and sound tiles read live hardware. Temperature, humidity, pressure, air quality, altitude and heading are prototype values, and light sensing is not available on this prototype.
+
+### Weather
+
+Temperature, humidity and pressure with a short trend.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype values and a synthetic trend line. Needs the Environmental module.
+
+### Air Quality
+
+A VOC-based air-quality index with Good, Moderate and Poor states.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype values. Needs the Environmental module. The index is based on volatile organic compounds; it is not a particulate or health measurement.
+
+### Altimeter
+
+Pressure altitude and climb rate.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype values. Needs the Environmental module. Pressure altitude differs from satellite-positioning altitude, and the screen says so.
+
+### Compass
+
+Heading, with a prompt to calibrate.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype heading. The prototype's motion sensor has no magnetometer. Rev02 plans 9-axis motion sensing in the base unit.
+
+### Level
+
+Pitch and roll with a bubble level.
+
+**Interface** Implemented · **Data** Live
+
+Live tilt from the prototype's motion sensor.
+
+### Motion Lab
+
+Live acceleration traces, peak g-force and drop estimates.
+
+**Interface** Implemented · **Data** Live
+
+Live acceleration from the prototype's motion sensor.
+
+### GPS
+
+Fix status, coordinates, altitude, speed and satellite signal strength.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype fix and coordinates. Satellite positioning is planned for the Rev02 base unit and is not fitted to the prototype.
+
+### Light and Colour
+
+Ambient light on a logarithmic scale, and colour capture.
+
+**Interface** Implemented · **Data** Planned
+
+Opened from Sensor Hub. The screen reads a light-sensor driver, but no light sensor is detected on the current prototype. Light and colour sensing belong to the planned Optical module.
+
+### Sound Meter
+
+Relative sound level with maximum and average.
+
+**Interface** Implemented · **Data** Live
+
+Opened from Sensor Hub. Reads a live, relative and uncalibrated level from a microphone wired to the prototype; it is not a calibrated sound level meter. The frequency bars shown in the design are not implemented. In Rev02, sound sensing belongs to the Audio I/O module.
+
+### Data Logger
+
+Choose sensors and an interval, then record a session.
+
+**Interface** Designed · **Data** Planned
+
+Designed, not implemented. Field Logging covers part of this flow today.
+
+### Graph Viewer
+
+Plot recorded sessions.
+
+**Interface** Specified, deferred · **Data** —
+
+Not currently implemented.
+
+## Comms
+
+<Columns cols={3}>
+  <Frame caption={"Range Test"}><img src="/images/screens/C3-range-test.png" alt={"Design render of Range Test role selection: a Master card that sends pings and an Echo card that replies."} /></Frame>
+  <Frame caption={"IR Remote"}><img src="/images/screens/C6-ir-remote.png" alt={"Design render of IR Remote: a list of learned remotes (Living room TV, Projector, Fan, Lab bench light) and a New remote row."} /></Frame>
+</Columns>
+
+### LoRa Messenger
+
+Short text messages between ORION units.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype inbox and contacts. Needs the LoRa module.
+
+### Ground Station
+
+Receive and list telemetry frames from other units.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype frames. Needs the LoRa module.
+
+### Range Test
+
+Measure the radio link between two units.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype values. Needs the LoRa module on both units; distance also needs a position fix at both ends.
+
+### Wi-Fi Scanner
+
+List nearby Wi-Fi networks and their signal strength.
+
+**Interface** Implemented · **Data** Prototype values
+
+Shows a prototype list. The processor supports Wi-Fi, but the firmware does not scan yet.
+
+### BLE Scanner
+
+Explore nearby Bluetooth LE devices.
+
+**Interface** Specified, deferred · **Data** —
+
+Not currently implemented. The launcher tile is disabled.
+
+### IR Remote
+
+Learn and replay infrared remote controls.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype remote library. Needs the Optical module.
+
+## Field ops
+
+<Columns cols={3}>
+  <Frame caption={"Field Logging"}><img src="/images/screens/F1-field-logging.png" alt={"Design render of Field Logging: sensor chips, positioning duty, auto-stop and interval rows above a red Arm button."} /></Frame>
+  <Frame caption={"Beacon"}><img src="/images/screens/F2-beacon-locate.png" alt={"Design render of Beacon role selection: \"Be found\" transmits position on a loop; \"Find\" listens for a beacon, noting that radio proximity is approximate."} /></Frame>
+  <Frame caption={"Missions"}><img src="/images/screens/F3-missions.png" alt={"Design render of Missions: a list of guided experiments (Weather Watch, Drop Lab, Signal Trek, Light Survey) with durations."} /></Frame>
+</Columns>
+
+### Field Logging
+
+Configure and arm an unattended logging session.
+
+**Interface** Implemented · **Data** Prototype values
+
+The session runs as a simulation. No samples are written to storage yet.
+
+### Beacon
+
+Transmit position on a loop, or listen for another unit's beacon.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype values. Needs the LoRa module and satellite positioning.
+
+### Missions
+
+Guided experiments with a briefing, steps and a debrief.
+
+**Interface** Implemented · **Data** Prototype values
+
+The mission flow is built. Sessions are simulated, and several missions need planned hardware.
+
+## Space and AI
+
+<Columns cols={3}>
+  <Frame caption={"ISS Tracker"}><img src="/images/screens/X1-iss-tracker.png" alt={"Design render of ISS Tracker: a list of upcoming passes with times, maximum elevation arcs and durations."} /></Frame>
+  <Frame caption={"Sun and Sky"}><img src="/images/screens/X2-sun-sky.png" alt={"Design render of Sun and Sky: a day arc with sunrise, solar noon, sunset, day length, golden hour, moon phase and a best outdoor charge window."} /></Frame>
+  <Frame caption={"Motion AI"}><img src="/images/screens/X3-motion-ai.png" alt={"Design render of Motion AI: taught motion slots (Double flick, Circle, Sharp tap) with toggles and an empty slot."} /></Frame>
+</Columns>
+
+### ISS Tracker
+
+Upcoming passes of the International Space Station.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype pass list. Predicting passes needs orbital data and a position, and neither is available yet.
+
+### Sun and Sky
+
+Sunrise, sunset, day length, moon phase and a best window for outdoor solar charging.
+
+**Interface** Implemented · **Data** Prototype values
+
+Calculated by the firmware from a prototype location and time.
+
+### Motion AI
+
+Teach ORION motions and bind them to actions.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype list of taught motions. On-device motion matching is designed, not implemented.
+
+### Air Mouse
+
+Use ORION as a Bluetooth LE pointer or presentation remote.
+
+**Interface** Implemented · **Data** Prototype values
+
+Prototype device list. Bluetooth LE is not used by the firmware yet.
+
+## Tools
+
+<Columns cols={3}>
+  <Frame caption={"Stopwatch, timer and alarm"}><img src="/images/screens/T1-stopwatch-timer-alarm.png" alt={"Design render of the Stopwatch: 01:11.0 with three lap times."} /></Frame>
+  <Frame caption={"Calculator"}><img src="/images/screens/T2-calculator.png" alt={"Design render of the Calculator: a keypad below the result 960 for 128 × 7.5."} /></Frame>
+  <Frame caption={"Paint"}><img src="/images/screens/T4-paint.png" alt={"Design render of Paint: a colour swatch toolbar above freehand red and blue strokes and a gold circle."} /></Frame>
+  <Frame caption={"Morse Studio"}><img src="/images/screens/T5-morse-studio.png" alt={"Design render of Morse Studio: a message with its dot-dash timeline and output options LED, Beep, IR and Vibe at 12 words per minute."} /></Frame>
+</Columns>
+
+### Stopwatch, timer and alarm
+
+Stopwatch with laps, countdown timer and a daily alarm.
+
+**Interface** Implemented · **Data** On-device
+
+Stopwatch and timer run from the firmware's timer. The alarm follows the prototype clock until a real-time clock is implemented.
+
+### Calculator
+
+A four-function calculator.
+
+**Interface** Implemented · **Data** On-device
+
+Runs entirely in firmware.
+
+### Torch
+
+Turns the display into a light.
+
+**Interface** Implemented · **Data** On-device
+
+Uses the display as the light source.
+
+### Paint
+
+Draw with a finger and save the drawing.
+
+**Interface** Implemented · **Data** Live
+
+Touch drawing works on the prototype, and drawings save to on-device storage.
+
+### Morse Studio
+
+Compose Morse code and send it as light, sound, infrared or vibration.
+
+**Interface** Implemented · **Data** On-device
+
+Playback through audio output is implemented. Infrared output needs the Optical module, and vibration is not implemented.
+
+### Voice Recorder
+
+Record and play back short clips.
+
+**Interface** Specified, deferred · **Data** —
+
+Not currently implemented. The launcher tile is disabled.
+
+## Play
+
+<Columns cols={3}>
+  <Frame caption={"Breakout"}><img src="/images/screens/P2-breakout.png" alt={"Design render of Breakout: rows of coloured bricks, a ball and a paddle, with lives and level counters."} /></Frame>
+  <Frame caption={"Dice and Spinner"}><img src="/images/screens/P3-dice-spinner.png" alt={"Design render of Dice: a die showing three, with the caption \"shake to roll\"."} /></Frame>
+  <Frame caption={"Reaction Timer"}><img src="/images/screens/P4-reaction-timer.png" alt={"Design render of Reaction Timer: a green screen reading TAP, 198 ms, best 184 ms, average 231 ms."} /></Frame>
+</Columns>
+
+### Snake
+
+The classic snake game.
+
+**Interface** Implemented · **Data** On-device
+
+The game runs, but steering uses a physical control the prototype does not have, so it is not playable yet.
+
+### Breakout
+
+Break the bricks with a paddle and ball.
+
+**Interface** Implemented · **Data** On-device
+
+The game runs, but the paddle uses a physical control the prototype does not have, so it is not playable yet.
+
+### Dice and Spinner
+
+Shake to roll a die or spin.
+
+**Interface** Implemented · **Data** Live
+
+Shake detection uses the live motion sensor.
+
+### Reaction Timer
+
+Tap as soon as the screen turns green.
+
+**Interface** Implemented · **Data** Live
+
+Runs on the prototype's touch screen.
+
+---
+
+_47 screens are specified. 42 are implemented in the device software. 6 present at least one reading from live hardware on the development prototype._
+
+{/* GENERATED:screens END */}
+
+## Related
+
+<Columns cols={3}>
+  <Card title="Navigation grammar" icon="hand-pointer" href="/missionos/navigation">
+    How you move between all of these.
+  </Card>
+  <Card title="The data model" icon="database" href="/missionos/data-model">
+    Why a screen and its sensor are separate.
+  </Card>
+  <Card title="Development status" icon="list-check" href="/overview/status">
+    The platform-level picture.
+  </Card>
+</Columns>

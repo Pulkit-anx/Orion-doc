@@ -1,0 +1,126 @@
+---
+title: "MissionOS"
+sidebarTitle: "Overview"
+description: "MissionOS is ORION's on-device operating environment: a mission-control interface for a pocket satellite, with seven categories of instruments and a consistent navigation grammar."
+icon: "tv"
+mode: "wide"
+---
+
+The device is a pocket satellite you hold in your hand, and **MissionOS is its mission control**.
+
+The interface treats every use as a mission. Instruments read like telemetry panels. Logging
+sessions have a brief, a run and a debrief. With a radio fitted, one unit can act as the satellite
+and another as the ground station.
+
+<Frame caption="Home, the launcher, and an instrument">
+  <Columns cols={3}>
+    <img src="/images/screens/S2-home-watchface.png" alt="Home: a split clock with the date and environment chips beneath." />
+    <img src="/images/screens/S3-app-launcher.png" alt="Launcher: a category rail above a grid of app icons." />
+    <img src="/images/screens/I2-weather.png" alt="Weather instrument: a large hero readout flanked by dotted edge meters." />
+  </Columns>
+</Frame>
+
+## What MissionOS is
+
+A single-purpose operating environment for a 280 × 240 landscape colour touch panel. It is not a
+phone UI scaled down — it is built to be read at a glance, the way a flight instrument is.
+
+<Columns cols={2}>
+  <Card title="Design language" icon="palette" href="/missionos/design-language">
+    **Ground Control** — dark, instrument-grade, calm. Telemetry numerals in mono, thin rules,
+    colour used as signal rather than decoration.
+  </Card>
+  <Card title="Navigation grammar" icon="hand-pointer" href="/missionos/navigation">
+    One grammar on every screen. Apps may add context actions; they may never remap the global set.
+  </Card>
+  <Card title="The launcher" icon="grid" href="/missionos/launcher">
+    Seven categories of built-in applications, plus a tab that lists the apps you install yourself.
+  </Card>
+  <Card title="Screen reference" icon="table-list" href="/missionos/screens">
+    All 47 specified screens, with renders, purpose and status.
+  </Card>
+</Columns>
+
+## How it is organised
+
+Every screen sits in one of seven categories, and the launcher is the way into all of them.
+
+| Category | Purpose |
+|---|---|
+| **Instruments** | Live sensor applications — the hub, weather, motion, level, light, sound, logging |
+| **Comms** | Radios and infrared |
+| **Field Ops** | Logging sessions, beacons, guided missions |
+| **Space & AI** | ISS tracking, sun and sky, on-device motion learning, pointer control |
+| **Tools** | Stopwatch, calculator, torch, paint, Morse |
+| **Play** | Small games that exercise the sensors |
+| **System** | Settings, files, power, alerts, update |
+
+An eighth tab, **User Apps**, is filled at run time from the packages installed through the
+[User App Platform](/user-apps).
+
+## The screen frame
+
+Every screen renders into the same three zones, so a user always knows where to look.
+
+```text
+┌───────────────────────────────────────────────┐  0
+│ status bar — clock · radios · GNSS · battery  │
+├───────────────────────────────────────────────┤  18
+│                                               │
+│  content                                      │
+│  the screen itself                            │
+│                                               │
+├───────────────────────────────────────────────┤  216
+│ hint bar — contextual action labels           │
+└───────────────────────────────────────────────┘  240
+       0                                     280
+```
+
+Full-bleed screens — the torch, the games, the paint canvas, the charge face — may take the whole
+panel and hide the bars.
+
+## Built on five templates
+
+Most screens are instances of a small set of templates, which is why the interface stays coherent
+across 47 of them.
+
+| Template | Used for |
+|---|---|
+| **Instrument** | A hero value zone with a support zone beneath — sparkline, dial or secondary values |
+| **List** | A scrolling list of 44 px rows with a glyph, a primary and secondary label, and a value |
+| **Card carousel** | Home, with page pips |
+| **Wizard** | Guided multi-step flows such as first-run setup |
+| **Modal and toast** | Transient and blocking alerts |
+
+Shared components — a mini keyboard, a graph widget, a circular dial gauge, and a destructive-action
+confirmation — are built once and reused.
+
+## Relationship to the hardware
+
+MissionOS reads every value from one shared data model, and screens never talk to a driver
+themselves. That is what lets the same screen run whether or not the sensor behind it is fitted:
+the screen is complete, and the reading is wired in separately.
+
+<Card title="How data reaches a screen" icon="database" href="/missionos/data-model" horizontal>
+  One model, one place readings enter it, and which readings are live on the development prototype.
+</Card>
+
+## Relationship to User Apps
+
+MissionOS screens are part of the device software. **User Apps are not** — they are separate
+WebAssembly programs, installed while the device is running, that reach the device only through a
+frozen capability API. An app runs inside a dedicated app screen in the same loop, so while it is
+open it *is* the active screen.
+
+<Card title="Native apps vs User Apps" icon="code-compare" href="/develop/native-vs-user-apps" horizontal>
+  The distinction that matters most, and which one you can build.
+</Card>
+
+## Status
+
+MissionOS is implemented and runs on the development prototype: boot, navigation, the launcher,
+the screen system, the UI framework and the touch and gesture layer. Instruments whose sensors the
+prototype does not carry present prototype values, and the
+[screen reference](/missionos/screens) states this per screen.
+
+Detail is on [Development status](/overview/status).

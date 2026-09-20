@@ -1,0 +1,53 @@
+---
+title: "Platform architecture"
+sidebarTitle: "Architecture"
+description: "The architecture views of ORION — software layers, the User App path and MissionOS data flow — and where each one is documented."
+icon: "layer-group"
+---
+
+ORION is a platform in layers: hardware that is partly planned, device software that runs today, and
+apps on top. Each view shows status per part, so the planned and the real are never merged.
+
+## The three views
+
+<Columns cols={3}>
+  <Card title="Software layers" icon="sitemap" href="/overview/what-is-orion#how-the-layers-fit-together">
+    MissionOS screens are part of the device software and read its data model directly. User Apps are
+    separate WebAssembly programs that reach the device only through the capability API.
+  </Card>
+  <Card title="The User App path" icon="box" href="/user-apps#from-package-to-running-app">
+    A package is checked on your computer by `orion build`, and again on the device before it is
+    installed and each time it is launched.
+  </Card>
+  <Card title="MissionOS data flow" icon="database" href="/missionos/data-model">
+    Drivers write into one shared data model; screens read from it. On the prototype only motion and
+    sound come from live hardware.
+  </Card>
+</Columns>
+
+## Who owns which layer
+
+| Layer | Owned by | Responsibility | Status |
+|---|---|---|---|
+| Base operating system | ANX Labs | Start-up, power, display and interface, positioning, motion, timekeeping, storage, logging, connectivity, updates | MissionOS today, partly implemented |
+| Module drivers | ANX Labs | One driver per module, exposed to applications as a capability | `[DESIGN]` |
+| Module firmware | ANX Labs, or you for an open payload | Firmware on a module's own microcontroller, where it has one | `[DESIGN]` |
+| Applications | You | What to sample, when, and what to show or send | [User Apps](/user-apps) today; module capabilities are not defined |
+
+The principle that runs through all of it: **applications ask for capabilities, not for parts.** That
+is how the same application can run on differently configured units, and it is already how the
+[User App capability system](/user-apps/capabilities) works.
+
+## The boundary that matters
+
+The line between the device software and a User App is not a convention — it is enforced, and it is
+the reason apps are safe to install.
+
+| | MissionOS | User App |
+|---|---|---|
+| Memory | the device's own | its own linear memory only |
+| APIs | everything internal | the frozen [ABI 1.0](/reference/abi) |
+| Failure | can stop the device | stopped on its own; MissionOS continues `[VERIFIED]` |
+
+See [Native apps vs User Apps](/develop/native-vs-user-apps) and
+[Security and containment](/user-apps/security).

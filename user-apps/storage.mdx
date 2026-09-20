@@ -1,0 +1,99 @@
+---
+title: "Storage"
+description: "Private key/value storage for ORION User Apps — limits, lifetime, costs and how to write safely inside the callback budget."
+icon: "hard-drive"
+tag: "VERIFIED"
+---
+
+Declare the `storage` capability and a quota, and an app gets a small key/value store that belongs only to it.
+
+```json
+"capabilities": ["system", "display", "storage"],
+"limits": { "storage_quota_bytes": 1024 }
+```
+
+## Lifetime and visibility
+
+- **Private.** Other apps cannot see or change it.
+- **Persistent.** Values survive closing the app, restarting ORION and removing power.
+- **Kept on update.** Installing a new version with the same `id` keeps the data.
+- **Deleted on uninstall.** `orion uninstall` removes the app and its data.
+- **Atomic writes.** A write replaces the whole value in one step.
+
+## Limits
+
+| Item | Limit |
+|---|---|
+| Key | 1–32 characters of `a-z 0-9 _ -` |
+| Value | 0–4,096 bytes |
+| Keys per app | 16 |
+| Total | `limits.storage_quota_bytes` in `orion.json`, at most 65,536 bytes |
+
+## Writes are slow
+
+A storage write is a flash operation. On the development prototype, 100 writes took **23–65 ms each (median 31 ms)**, and writes get slower as storage fills. A callback has a 100 ms budget by default, and time inside ORION calls counts toward it.
+
+<Warning>
+  **Rules for storage writes**
+
+  - **Write when a value changes, never every frame.**
+  - **At most one write per callback.**
+  - **Never write in `on_enter`.** A launch that read two keys and wrote one took 104 ms and was stopped.
+  - **Queue further changes** and write one per `update`.
+</Warning>
+
+Reads are much cheaper, about 3 ms, so reading saved state in `on_enter` is fine.
+
+## A safe pattern
+
+Keep a bit-set of pending operations and perform at most one per `update`. This is how the `hello_orion` example handles it:
+
+```c
+enum { STORE_TAPS = 1 << 0, DELETE_TAPS = 1 << 1, STORE_LAUNCHES = 1 << 2 };
+static uint32_t pending;
+
+/* Performs the most important queued storage operation, and only one. */
+static void store_one(void)
+{
+    if (pending & DELETE_TAPS) {
+        orion_storage_delete_str("taps");
+        pending &= ~DELETE_TAPS;
+    } else if (pending & STORE_TAPS) {
+        save_int("taps", taps);
+        pending &= ~STORE_TAPS;
+    } else if (pending & STORE_LAUNCHES) {
+        save_int("launches", launches);
+        pending &= ~STORE_LAUNCHES;
+    }
+}
+
+void orion_app_on_enter(void)
+{
+    taps = load_int("taps", 0);
+    launches = load_int("launches", 0) + 1;
+    pending = STORE_LAUNCHES; /* written by the first update, not here */
+}
+
+void orion_app_update(void)
+{
+    /* ... handle input, set bits in `pending` ... */
+    store_one();
+}
+
+void orion_app_on_exit(void)
+{
+    store_one(); /* anything still queued was changed in the last few milliseconds */
+}
+```
+
+`save_int` and `load_int` are small helpers around `orion_storage_write_str` and `orion_storage_read_str`; see the full example in [Examples](/user-apps/examples#hello-orion).
+
+## Errors
+
+| Status | Meaning |
+|---|---|
+| `ORION_ERR_NOT_FOUND` | No value for that key |
+| `ORION_ERR_LIMIT` | Value over 4,096 bytes, or larger than your read buffer |
+| `ORION_ERR_NO_SPACE` | Quota or 16-key limit reached |
+| `ORION_ERR_IO` | The write failed |
+| `ORION_ERR_INVALID_ARG` | Malformed key, or a read `capacity` over 4,096 |

@@ -1,0 +1,128 @@
+---
+title: "Ground Control design language"
+sidebarTitle: "Design language"
+description: "MissionOS's visual language: dark, instrument-grade and calm, with colour used as signal rather than decoration."
+icon: "palette"
+---
+
+MissionOS's design language is called **Ground Control**.
+
+Dark, instrument-grade, calm. Telemetry numerals in mono, thin rules, restrained colour used as
+signal — state — not decoration. It should feel closer to a flight instrument than a phone. One
+glance answers *what is the value, and is it OK*.
+
+<Frame caption="Three instruments in the same language: a dial, an arc gauge and a tick tape">
+  <Columns cols={3}>
+    <img src="/images/screens/I5-compass.png" alt="Compass: a circular dial with tick marks, north in red, and a mono heading readout in the centre." />
+    <img src="/images/screens/I3-air-quality.png" alt="Air Quality: a ring gauge with an index value and a state word beneath." />
+    <img src="/images/screens/I4-altimeter.png" alt="Altimeter: a vertical tick tape beside a large mono altitude readout." />
+  </Columns>
+</Frame>
+
+## Colour
+
+Eleven tokens. Every colour in the interface is one of these, and each has a stated job.
+
+| Token | Value | Use |
+|---|---|---|
+| Background | `#0F0F0F` | The panel ground. Every screen starts here |
+| Surface | `#1A1A1E` | Cards, tiles, panels |
+| Line | `#2A2A30` | Hairlines and dividers |
+| Text — primary | `#F8F6F0` | Primary text |
+| Text — secondary | `#9A9AA0` | Secondary text and units |
+| Accent — red | `#E42217` | Record, alerts, destructive actions, brand moments |
+| Accent — blue | `#2E7FB8` | Interactive focus, links, selection |
+| Accent — gold | `#D4A017` | Highlights, maxima, achievements |
+| State — OK | `#3FBF6F` | Good, in range, fix acquired |
+| State — warn | `#E8A13D` | Caution |
+| State — bad | `#E42217` | Alarm — deliberately the same red as the accent |
+
+<Note>
+  Index and level readouts interpolate along the **OK → warn → bad** ramp, so a user reads state
+  from colour before they read the number.
+</Note>
+
+## Typography
+
+The type split is the visual signature of the interface.
+
+| Role | Face | Sizes |
+|---|---|---|
+| **Labels, body, titles** | A proportional UI face | 12 / 14 / 16 / 20 |
+| **Telemetry values** | A condensed monospace | 24 / 32 / 48 |
+
+Every live value is set in mono; every label is set in the UI face. Values that update in place use
+tabular figures, so digits do not shift as they change.
+
+## Spacing, shape and icons
+
+| | |
+|---|---|
+| **Grid** | 4 px base |
+| **Corner radius** | 6 px tiles · 10 px modals · 3 px chips |
+| **App icons** | 48 × 48, 2 px stroke, geometric, single-colour on transparent |
+| **Status icons** | 18 × 18 |
+| **Inline glyphs** | 24 × 24 |
+| **Focus ring** | 2 px accent-blue outer ring |
+
+The focus ring matters more than it looks: the interface was designed so that focus is visible
+without touching the screen.
+
+## Motion
+
+Motion is deliberately sparse, because movement in an instrument reads as a change in the
+measurement.
+
+| Event | Behaviour |
+|---|---|
+| Screen transition | 150 ms slide — forward left, back right |
+| Value change | Snap. No tween on telemetry; graphs scroll |
+| Alert | 200 ms drop-in |
+| Target | 30 fps for the interface; graphs render at their data rate |
+
+## Light and haptic language
+
+The design specifies a system-wide feedback language — an indicator colour and a haptic pattern per
+event, so that a user working with the device in a pocket or on a bench gets confirmation without
+reading the screen.
+
+| Event | Indicator | Haptic |
+|---|---|---|
+| Boot | Blue sweep | Single tick |
+| Charging | Amber slow breathe | — |
+| Position fix acquired | Green double-blink | Tick |
+| Logging active | Red pulse every 5 s | — |
+| Alert — warn / bad | Amber / red triple | Double / long buzz |
+| Battery 20 / 10 / 5 % | Amber / red blink / red solid | Tick / double / long |
+| Mission complete | Gold shimmer | Tick-tick-buzz |
+
+<Note>
+  **This part is design, not hardware.** The development prototype has no indicator light and no
+  vibration motor, so the feedback language is specified but not active. It is documented here
+  because it is part of how MissionOS is meant to be experienced, and because a User App should not
+  assume it exists.
+</Note>
+
+## Writing inside the interface
+
+One copy rule governs everything on screen: **the product is expressed through what the screens do,
+not through slogans.** There are no taglines inside MissionOS, and no screen claims a capability the
+device does not have.
+
+That rule is why instrument screens carry their own caveats — the altimeter states that pressure
+altitude differs from satellite altitude, and the sound meter states that its level is
+uncalibrated — rather than presenting a number without context.
+
+## Next
+
+<Columns cols={3}>
+  <Card title="Navigation" icon="hand-pointer" href="/missionos/navigation">
+    The grammar every screen shares.
+  </Card>
+  <Card title="Launcher" icon="grid" href="/missionos/launcher">
+    Seven categories and your apps.
+  </Card>
+  <Card title="Screen reference" icon="table-list" href="/missionos/screens">
+    The language applied, 47 times.
+  </Card>
+</Columns>

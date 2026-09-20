@@ -1,0 +1,99 @@
+---
+title: "Projects, building and packaging"
+description: "The orion.json manifest, the build pipeline, and how an app becomes an .orionapp package."
+sidebarTitle: "Packaging"
+icon: "cube"
+tag: "VERIFIED"
+---
+
+## Project structure
+
+```text
+my_app/
+├── orion.json          manifest and build settings (required)
+├── src/
+│   └── main.c          C sources (default build.sources)
+├── icon.pbm            48 × 48 icon (optional)
+└── build/              created by orion build — do not commit
+    ├── MyApp.wasm
+    └── MyApp-1.0.0.orionapp
+```
+
+## orion.json
+
+| Field | Required | Rules |
+|---|---|---|
+| `id` | yes | 3–48 characters of `a-z 0-9 . _ -`, starting with a letter. The identity of the app and its storage. |
+| `name` | yes | 1–24 printable ASCII characters. Shown in the launcher. |
+| `version` | yes | `major.minor.patch`, optionally `+build` |
+| `category` | no | 1–12 upper-case letters. Default `APPS`. |
+| `api` | no | `"1.0"`, the only API of this SDK |
+| `capabilities` | yes | Any of `system`, `display`, `input`, `motion`, `storage` |
+| `limits` | no | See below |
+| `description` | no | Up to 96 printable ASCII characters |
+| `author` | no | Up to 32 printable ASCII characters |
+| `icon` | no | Path to a 48 × 48 PBM image, text (`P1`) or binary (`P4`). Black pixels are lit. Without it, the launcher shows a generic chip icon. |
+| `build` | no | See below |
+
+Unknown fields are errors, so misspellings are caught.
+
+### limits
+
+| Field | Range | Default |
+|---|---|---|
+| `memory_pages` | 1–16 (64 KiB each) | 1 |
+| `instructions` | 1,000–1,000,000 per callback | 20,000 |
+| `callback_budget_ms` | 10–200 per callback | 100 |
+| `wasm_stack_bytes` | 4,096–65,536 | 16,384 |
+| `storage_quota_bytes` | 0–65,536; required with `storage` | — |
+
+### build
+
+| Field | Default | Meaning |
+|---|---|---|
+| `sources` | `["src/*.c"]` | Glob patterns relative to the project. C only. |
+| `include_dirs` | `[]` | Extra include directories |
+| `defines` | `{}` | `{"NAME": "value"}`; `null` defines without a value |
+| `optimize` | `"s"` | `0 1 2 3 s z` |
+| `stack_bytes` | 8192 | C stack size inside linear memory |
+| `strip` | `false` | Strip all custom sections, including function names |
+| `werror` | `false` | Treat warnings as errors |
+
+## The build pipeline
+
+`orion build` runs these steps and stops at the first error:
+
+1. **Read `orion.json`.** Every field and limit is checked against the ranges the firmware accepts.
+2. **Find the toolchain.** `--toolchain`, then `ORION_WASI_SDK`, then `~/.orion/toolchains/wasi-sdk-*`.
+3. **Compile and link** your sources with the SDK runtime in one clang invocation, for 32-bit WebAssembly with the three WebAssembly proposals ORION's runtime enables. The C stack is placed first in memory, memory is fixed at the declared size, and the lifecycle functions are exported by name.
+4. **Validate the module:**
+   - every opcode is one ORION's runtime enables — reference types, SIMD, tail calls, exceptions and threads are refused;
+   - every import is an ORION function with the exact signature, from a declared capability;
+   - `orion_app_update` and `orion_app_draw` exist, and every lifecycle export takes and returns nothing;
+   - there is no start function;
+   - at most one function table, and initial memory within `memory_pages`;
+   - a warning for each declared capability the code never uses.
+5. **Package** the module, manifest and optional icon into an `.orionapp`, read it back, and check the 512 KiB size limit.
+6. **Report** sizes, imports, exports, memory and limits.
+
+## After the build
+
+Your package is `build/<Name>-<version>.orionapp`, with spaces removed from the name. Check it at any time:
+
+```bash
+sdk/bin/orion inspect my_app/build/MyApp-1.0.0.orionapp
+```
+
+ORION validates the package again when you install it and when you launch it. A package that passes `orion build` can still be refused by a device whose firmware does not implement its API version.
+
+The binary layout of the package is documented in the [.orionapp format reference](/reference/app-format).
+
+## Workflow summary
+
+```text
+edit src/*.c, orion.json
+  → orion build       compile, validate, package         (your computer)
+  → orion install     transfer, validation on the device (developer firmware, USB)
+  → User Apps tab, or orion launch
+  → developer log lines: [app:<id>] …
+```

@@ -1,0 +1,83 @@
+---
+title: "Developing for ORION"
+sidebarTitle: "Overview"
+description: "Write sandboxed applications for ORION in C, compiled to WebAssembly and installed over USB."
+icon: "code"
+---
+
+**You build User Apps.** Write C, compile it to WebAssembly with the ORION SDK, install it over USB,
+and it appears in the launcher beside the built-in applications — sandboxed, capability-gated, and
+unable to take the device down.
+
+<Columns cols={2}>
+  <Card title="Write your first app" icon="rocket" href="/user-apps/quickstart" horizontal>
+    From an empty directory to running code on the device.
+  </Card>
+  <Card title="What you need first" icon="list-check" href="/develop/getting-started" horizontal>
+    Toolchain, SDK and hardware.
+  </Card>
+</Columns>
+
+## What a User App gets
+
+An app declares the capabilities it needs and can use nothing else:
+
+| Capability | What it gives you |
+|---|---|
+| `system` | Lifecycle, time since start, a developer log, redraw requests |
+| `display` | Clear, filled rectangles and one line of text on the 280 × 240 panel, in the ORION palette |
+| `input` | Tap and swipe gestures |
+| `motion` | The latest acceleration and tilt sample |
+| `storage` | A private key/value store that survives restarts |
+
+Calling into a capability you did not declare fails the build, and ORION refuses such a package at
+install. Everything else — drivers, buses, the file system, MissionOS screens and data, other apps,
+the network — is outside the boundary by design.
+
+<Card title="The capability API" icon="key" href="/user-apps/capabilities" horizontal>
+  Every call, what it costs, and what it returns.
+</Card>
+
+## The workflow
+
+<Steps>
+  <Step title="Write">
+    C, against `<orion/orion.h>`. Four lifecycle callbacks; two are required.
+  </Step>
+  <Step title="Build">
+    `orion build` compiles, validates and packages the app into a single `.orionapp` file.
+  </Step>
+  <Step title="Install">
+    `orion install` sends it over USB. ORION validates it again before activating it.
+  </Step>
+  <Step title="Run">
+    It appears in the launcher's User Apps tab. Swipe from the left edge to leave it.
+  </Step>
+</Steps>
+
+## The other two tracks
+
+| Track | What it is | Where it stands |
+|---|---|---|
+| **[Native OS](/develop/native-os)** | MissionOS itself — screens, drivers, the UI framework | Built by ANX Labs. The source is not public, and the architecture is documented for understanding rather than for building |
+| **[Payloads and modules](/develop/payloads)** | Attaching your own hardware | A design direction. The interface specification is not published yet |
+
+## Start here
+
+<Columns cols={3}>
+  <Card title="User App concepts" icon="lightbulb" href="/user-apps/concepts">
+    The model your app lives in, and the budgets it works within.
+  </Card>
+  <Card title="The SDK" icon="toolbox" href="/user-apps/sdk">
+    What ships in it, and the `orion` command.
+  </Card>
+  <Card title="ABI 1.0" icon="plug" href="/reference/abi">
+    The frozen contract between an app and the device.
+  </Card>
+</Columns>
+
+<Note>
+  The platform is functionally complete for v1 and **not production-secure**: packages are unsigned
+  and install over a USB developer connection. Read
+  [Security and containment](/user-apps/security) before you rely on it.
+</Note>

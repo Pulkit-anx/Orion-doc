@@ -1,0 +1,92 @@
+---
+title: "Terminology"
+description: "Terms used in ORION documentation, and older terms that no longer apply."
+icon: "book-open"
+---
+
+## Product
+
+**ANX Labs** — the company that makes PocketSAT ORION.
+
+**PocketSAT ORION** — the product: a modular sensing and telemetry platform. "ORION" is used for short.
+
+**Rev02** — the current product direction: a base unit plus stack modules. A concept; the design is not frozen.
+
+**Development prototype** — the ESP32-S3 hardware that MissionOS and the User App Platform run on today. It is not Rev02 hardware.
+
+**Base unit** — the 1U unit every ORION configuration starts with: compute, display, touch, motion, positioning, timekeeping, storage, power and expansion.
+
+**Stack module** — a separate 1U or 0.5U unit that adds capability to the base unit.
+
+**1U, 0.5U** — module size classes. A 0.5U module is half the height of a 1U module.
+
+**ANX Stack Bus** — the connection between the base unit and its stack modules.
+
+**Launch modules** — the five modules planned first: LoRa, Environmental, Optical, Audio I/O and Open Payload.
+
+**Configuration** — a base unit with a particular set of modules.
+
+**Module detection** — in the Rev02 design, how the base unit identifies attached modules at start-up.
+
+**Powered-off attachment** — modules are attached and removed only while ORION is powered off. ORION does not support hot-plugging.
+
+## Software
+
+**MissionOS** — the operating environment on ORION: screens, navigation, data model, drivers and the User App runtime.
+
+**Screen** — one MissionOS view, such as Home, Weather or Motion Lab.
+
+**Launcher** — the MissionOS app grid, with seven categories and a User Apps tab.
+
+**Data model** — the shared set of readings MissionOS screens read from.
+
+**Demo data** — fixed illustrative values shown where no hardware or driver exists yet.
+
+**Design render** — an image of a MissionOS screen drawn by the design process. Not a photograph or a screenshot from hardware.
+
+## User Apps
+
+**User App** — a third-party app written in C, compiled to WebAssembly, installed on ORION and run in a sandbox.
+
+**User App Platform** — the firmware that validates, installs, lists and runs User Apps.
+
+**SDK** — the ORION User App SDK Alpha: headers, runtime, the `orion` command and examples.
+
+**`.orionapp`** — a User App package: manifest, optional icon, WebAssembly module and digest.
+
+**Manifest** — `orion.json` in a project, and the manifest section of a package.
+
+**Capability** — a named group of ORION functions an app may use: `system`, `display`, `input`, `motion`, `storage`.
+
+**ABI** — the application binary interface between apps and ORION. ABI 1.0 is frozen.
+
+**Callback** — one of the four lifecycle functions ORION calls: `on_enter`, `update`, `draw`, `on_exit`.
+
+**Budget** — the instruction limit and wall-clock time allowed per callback.
+
+**Developer firmware** — an ORION firmware build that includes the USB developer connection used to install apps.
+
+**Back gesture** — a swipe right from the left edge. Owned by MissionOS and never delivered to apps.
+
+**APP STOPPED** — the screen shown when ORION stops an app that exceeded a limit or trapped.
+
+## Claims
+
+**VOC-based index** — an air-quality index derived from volatile organic compounds. Not a particulate or health measurement.
+
+**Relative, uncalibrated sound level** — a loudness indication that is not a calibrated sound pressure measurement.
+
+**Line-of-sight** — an unobstructed path between two radios. The only LoRa range statement ORION makes is up to 1 km line-of-sight, outdoors, with the LoRa module fitted.
+
+## Retired terms
+
+These appeared in earlier ORION design material. They do not describe ORION today.
+
+| Retired | Use instead | Why |
+|---|---|---|
+| App images installed from a memory card | `.orionapp` packages installed over USB | The app format and install path changed |
+| Signed community apps | Unsigned developer packages | Signing is not implemented |
+| Handheld console | Base unit and stack modules | Rev02 replaced the single-board handheld |
+| Built-in LoRa, environmental, optical or audio hardware | The matching stack module | Rev02 moved these into modules |
+| Rotary encoders, front and top buttons, touch pads | Touch today; physical controls in Rev02, mapping not final | The control set changed |
+| Lithium battery and runtime figures | Rechargeable power (Rev02 concept); no runtime figure | The power design changed and earlier figures are void |

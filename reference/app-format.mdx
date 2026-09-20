@@ -1,0 +1,66 @@
+---
+title: ".orionapp package format"
+description: "The binary layout of an ORION User App package, version 1 — header, sections, manifest records and digest."
+icon: "file-code"
+tag: "VERIFIED"
+---
+
+
+You do not need this page to build apps — `orion build` writes packages for you. It is for tools that read or write `.orionapp` files.
+
+<Warning>
+  **Integrity, not authenticity**
+
+  The trailing SHA-256 digest detects corruption and truncation. It is not a signature. Packages in format version 1 are unsigned.
+</Warning>
+
+All integers are little-endian. A package is at most 512 KiB.
+
+## Layout
+
+| Part | Contents |
+|---|---|
+| **Header** (32 bytes) | Magic `"ORAP"`, `u16 major = 1`, `u16 minor = 0`, `u32 header_size = 32`, `u32 total_size`, `u16 section_count` (2–8), `u16 flags = 0`, `u32 table_offset = 32`, two reserved `u32` |
+| **Section table** | `section_count` entries of 16 bytes: `u16 type`, `u16 flags`, `u32 offset`, `u32 size`, `u32 reserved` |
+| **Sections** | See below |
+| **Trailer** | SHA-256 of every byte before it |
+
+`total_size` must equal the file size. A package with bytes appended or removed is refused.
+
+## Section types
+
+| Type | Section |
+|---|---|
+| `0x0001` | Manifest (records, below) |
+| `0x0002` | Icon: 48 × 48, 1 bit per pixel, 288 bytes |
+| `0x0003` | WebAssembly module |
+| `0x8001` | Signature — reserved, not used in version 1 |
+
+## Manifest records
+
+The manifest is a sequence of records: `u16 tag`, `u16 length`, the value, then padding to a 4-byte boundary.
+
+| Tag | Field | Tag | Field |
+|---|---|---|---|
+| `0x0001` | id | `0x0008` | memory pages |
+| `0x0002` | name | `0x0009` | instruction limit |
+| `0x0003` | version (4 × `u16`) | `0x000A` | callback budget (µs) |
+| `0x0004` | category | `0x000B` | storage quota |
+| `0x0005` | runtime (1 = WebAssembly interpreter, version 1) | `0x000C` | interpreter stack |
+| `0x0006` | API (1, 0) | `0x000D` | module size + SHA-256 |
+| `0x0007` | capability bits | `0x000E` | icon descriptor (48, 48, 1) |
+| `0x8001` | description | `0x8002` | author |
+
+Capability bits: system 1, display 2, input 4, motion 8, storage 16.
+
+## Validation on the device
+
+Before activating a package, ORION checks, in order:
+
+1. size and digest;
+2. header, section table and manifest;
+3. declared API and runtime;
+4. the module: no start function, memory within the manifest's limit, imports only from declared capabilities, no automatically run exports;
+5. a trial creation of the app and the required exports.
+
+A failure is reported with a reason and leaves installed apps unchanged. The same checks run again every time the app is launched.

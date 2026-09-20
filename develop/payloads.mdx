@@ -1,0 +1,58 @@
+---
+title: "Payloads and modules"
+description: "Building hardware that attaches to ORION. Planned — the interface specification is not published."
+icon: "puzzle-piece"
+tag: "DESIGN"
+---
+
+<Warning>
+  **There is nothing to build against yet.** Attachable modules and the bus they would use are a
+  design concept, and the payload interface specification has not been published. `[DESIGN]`
+</Warning>
+
+## What is planned
+
+A successor design would let you attach your own hardware to ORION through an open payload module,
+providing:
+
+- a prototyping area for your own sensor or actuator;
+- access to the bus signals through a breakout;
+- power for your circuit from the base unit;
+- support for an optional microcontroller on the module, running your own firmware.
+
+ORION would then provide compute, power, storage and a display for your payload, and long-range
+telemetry when a radio module is fitted.
+
+## What a payload developer will need
+
+A payload is only practical if you can design it without help from ANX Labs. The planned payload
+interface document is intended to cover:
+
+| Topic | Status |
+|---|---|
+| Bus connections available to a payload | Not published |
+| Electrical limits: supply voltages and current per module | Not published |
+| Mechanical drawing of the module | Not published |
+| The interface between a payload's microcontroller and the base unit | Not published |
+| How a module identifies itself to the base unit at start-up | Not published |
+| Reference firmware for a payload microcontroller | Not published |
+
+<Note>
+  Every row above is genuinely unpublished, not merely undocumented here. Nothing in this table can
+  be inferred from the rest of this site.
+</Note>
+
+## What you can do today
+
+- Build [User Apps](/user-apps) on the development prototype. How payload data would reach
+  applications is not defined yet.
+- Nothing else. There is no development kit, no connector specification and no hardware.
+
+## Rules that would already apply
+
+These design decisions apply to every module, including payloads:
+
+- **Attach and remove modules only while ORION is powered off.** Modules are not hot-swappable.
+- The base unit is designed to identify attached modules when it starts.
+- Applications are designed to ask for *capabilities*, not for specific hardware — the same model
+  the [User App capability system](/user-apps/capabilities) already uses.

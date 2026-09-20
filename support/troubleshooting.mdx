@@ -1,0 +1,55 @@
+---
+title: "Troubleshooting"
+description: "Solve common problems with MissionOS on the development prototype, and find out when something is not a fault but not built yet."
+icon: "wrench"
+---
+
+
+<Tip>
+  **Building a User App?**
+
+  Build errors, rejected installs and stopped apps are covered in [User App troubleshooting](/user-apps/troubleshooting).
+</Tip>
+
+## It's not a fault — it's not built yet
+
+Many things that look like faults on the development prototype are features that do not exist yet. Check here first.
+
+| What you see | Why |
+|---|---|
+| The weather, air quality or altitude never changes | The screens are built; no environmental sensor is fitted to the prototype, so they present prototype values. |
+| The time is always the same | There is no clock driver. The time shown is a demo value. |
+| The battery always shows the same level | There is no battery measurement on the prototype. |
+| GPS always shows the same position | No positioning receiver is fitted. The fix and coordinates are demo values. |
+| The compass always points the same way | The prototype's motion sensor has no magnetometer. |
+| Light and Colour shows no reading | No light sensor is detected on the prototype. |
+| LoRa Messenger, Ground Station, Range Test or Beacon show the same messages | The screens are built; no long-range radio is fitted to the prototype. |
+| Wi-Fi Scanner always lists the same networks | The firmware does not scan yet. The list is demo data. |
+| Quick Settings toggles do nothing | They change interface state only. |
+| Settings are forgotten after a restart | Settings are not saved yet. |
+| The first-run wizard appears at every start | Because settings are not saved, the wizard cannot remember it has run. |
+| Snake or Breakout cannot be steered | They steer with a physical control the prototype does not have. |
+| BLE Scanner, Voice Recorder or App Link do nothing | `[NOT IMPLEMENTED]`. Their launcher tiles are deliberately disabled. |
+| Field Logging or a mission finishes but no data is saved | Sessions are simulated; nothing is written to storage yet. |
+| System Update finds nothing | No update mechanism is implemented. |
+
+For every screen, see the [screen catalogue](/missionos/screens) or [implementation status](/overview/status).
+
+## Navigation
+
+| Problem | Try |
+|---|---|
+| Can't get back from a screen | Swipe right starting at the very left edge of the display. A swipe that starts further in does not count as Back. |
+| Swipes change category instead of going back | Start the swipe closer to the left edge. |
+| Can't find the launcher | From Home, swipe up. |
+| Can't find Quick Settings | From Home, swipe down. |
+| A tap does nothing | Tap and lift. Gestures are recognised when your finger lifts. |
+| An installed app is missing | Open the launcher's User Apps tab. With many apps, swipe up to page. |
+
+## An app stopped
+
+If you see **APP STOPPED**, a User App exceeded its time or instruction budget, or failed. ORION has already recovered and returned to the launcher. The app can be opened again. If you wrote the app, see [User App troubleshooting](/user-apps/troubleshooting#app-is-stopped-while-running).
+
+## Still stuck
+
+See [Known limitations](/support/known-limitations) and the [FAQ](/support/faq).

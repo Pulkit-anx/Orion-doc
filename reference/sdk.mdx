@@ -1,0 +1,118 @@
+---
+title: "SDK and CLI reference"
+description: "Reference for the orion command, the orion.json manifest and the SDK's environment variables."
+icon: "terminal"
+tag: "VERIFIED"
+---
+
+## The orion command
+
+```text
+sdk/bin/orion [--toolchain DIR] COMMAND [ARGUMENTS]
+```
+
+`sdk/bin/orion` runs the SDK's Python tool with `python3`, or with the interpreter named by `ORION_PYTHON`.
+
+### Global option
+
+| Option | Meaning |
+|---|---|
+| `--toolchain DIR` | wasi-sdk directory. Default: `$ORION_WASI_SDK`, then `~/.orion/toolchains/wasi-sdk-*` |
+
+### Commands
+
+#### orion build
+
+```text
+orion build [PROJECT]
+```
+
+Compiles, validates and packages an app. `PROJECT` is a directory containing `orion.json`; it defaults to the current directory. Writes `PROJECT/build/<Name>.wasm` and `PROJECT/build/<Name>-<version>.orionapp`. See [Packaging](/user-apps/packaging#the-build-pipeline).
+
+#### orion inspect
+
+```text
+orion inspect PACKAGE
+```
+
+Prints the package's manifest and limits, lists the module's imports, prints warnings, and re-checks the module against the declared capabilities and memory. Exits non-zero if the check finds errors.
+
+#### orion doctor
+
+```text
+orion doctor
+```
+
+Reports the SDK, Python, the toolchain it found and its clang version, and whether pyserial is available.
+
+#### orion install
+
+```text
+orion install PACKAGE --port PORT [--launch] [--expect-mac MAC]
+```
+
+Installs a package on an ORION running developer firmware, over USB. The device validates the package before activating it. `--launch` opens the app after installing. `--expect-mac` refuses any device whose MAC address differs.
+
+#### orion launch
+
+```text
+orion launch APP_ID --port PORT [--expect-mac MAC]
+```
+
+Opens an installed app.
+
+#### orion uninstall
+
+```text
+orion uninstall APP_ID --port PORT [--expect-mac MAC]
+```
+
+Removes an app and its storage.
+
+## orion.json
+
+| Field | Required | Type and rules |
+|---|---|---|
+| `id` | yes | 3–48 characters of `a-z 0-9 . _ -`, starting with a letter |
+| `name` | yes | 1–24 printable ASCII characters |
+| `version` | yes | `major.minor.patch[+build]` |
+| `category` | no | 1–12 upper-case letters; default `APPS` |
+| `api` | no | `"1.0"` |
+| `capabilities` | yes | Array of `system`, `display`, `input`, `motion`, `storage` |
+| `limits.memory_pages` | no | 1–16; default 1 |
+| `limits.instructions` | no | 1,000–1,000,000; default 20,000 |
+| `limits.callback_budget_ms` | no | 10–200; default 100 |
+| `limits.wasm_stack_bytes` | no | 4,096–65,536; default 16,384 |
+| `limits.storage_quota_bytes` | with `storage` | 0–65,536 |
+| `description` | no | Up to 96 printable ASCII characters |
+| `author` | no | Up to 32 printable ASCII characters |
+| `icon` | no | Path to a 48 × 48 PBM (`P1` or `P4`) |
+| `build.sources` | no | Globs; default `["src/*.c"]` |
+| `build.include_dirs` | no | Array; default `[]` |
+| `build.defines` | no | Object; `null` value defines without a value |
+| `build.optimize` | no | `0`, `1`, `2`, `3`, `s` or `z`; default `s` |
+| `build.stack_bytes` | no | Default 8,192 |
+| `build.strip` | no | Default `false` |
+| `build.werror` | no | Default `false` |
+
+Unknown fields are errors.
+
+## Environment variables
+
+| Variable | Used by | Meaning |
+|---|---|---|
+| `ORION_WASI_SDK` | `orion` | wasi-sdk directory, if not in `~/.orion/toolchains/` |
+| `ORION_PYTHON` | `sdk/bin/orion` | Python interpreter to run the tool |
+
+## Headers
+
+| Header | Contents |
+|---|---|
+| `<orion/orion.h>` | Includes everything below |
+| `<orion/app.h>` | Lifecycle, time, log, redraw |
+| `<orion/display.h>` | Drawing, colours, text styles, `ORION_SCREEN_WIDTH`, `ORION_SCREEN_HEIGHT` |
+| `<orion/touch.h>` | Gestures |
+| `<orion/imu.h>` | Motion sample |
+| `<orion/storage.h>` | Key/value storage and its limits |
+| `<orion/util.h>` | `memcpy`, `memset`, `memmove`, `memcmp`, `orion_format_int`, `orion_format_fixed`, `orion_copy_str` |
+| `<orion/types.h>` | Status codes, API version, `ORION_IMPORT`, `ORION_EXPORT`, `ORION_STATIC_ASSERT` |

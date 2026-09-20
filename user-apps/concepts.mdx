@@ -1,0 +1,85 @@
+---
+title: "User App concepts"
+description: "How ORION runs a User App — the sandbox, capabilities, budgets, memory and the real costs of drawing and storage."
+icon: "lightbulb"
+tag: "VERIFIED"
+---
+
+## Why WebAssembly
+
+Code compiled into ORION's firmware can reach any memory and any driver, and a bug in it can restart the device. That is acceptable for MissionOS itself and not for third-party apps. So User Apps run as WebAssembly:
+
+- memory access is checked against the app's own memory;
+- the app can call only the functions ORION gives it;
+- execution can be metered and stopped;
+- a package installs without rebuilding the firmware.
+
+ORION runs apps with the WebAssembly Micro Runtime (WAMR) in interpreter mode.
+
+## The sandbox
+
+An app sees exactly two things: **its own linear memory** and **the ORION functions for the capabilities it declares**.
+
+- **Capabilities are declared in `orion.json`.** The build refuses code that calls an undeclared capability, and ORION checks again when installing and when launching.
+- **Pointers are offsets into the app's memory.** Every pointer passed to ORION is range-checked. An out-of-range pointer stops the app; it is not returned as an error.
+- **Data is copied in and out.** ORION never gives an app a pointer to firmware memory.
+- **Back belongs to MissionOS.** The left-edge back gesture is handled before the app sees any input. An app cannot detect or block it.
+
+## One app at a time
+
+ORION runs one User App at a time, in the same loop as MissionOS. Callbacks never overlap. While an app is open, MissionOS calls its `update` on every pass of the loop — about 250 times a second on the development prototype, with no guaranteed rate. An app is not real-time.
+
+## Budgets and costs
+
+Every callback runs under two limits, set in `orion.json`:
+
+| Limit | Default | Range |
+|---|---|---|
+| WebAssembly instructions per callback | 20,000 | 1,000 – 1,000,000 |
+| Wall-clock time per callback, including time inside ORION calls | 100 ms | 10 – 200 ms |
+
+An app that exceeds either limit, traps, or passes a bad pointer is **stopped**: ORION shows an "APP STOPPED" screen and returns to the launcher. The device keeps running.
+
+Time spent inside ORION calls counts toward the budget, and some calls are expensive. Measured on the development prototype — these describe what to expect and are not guarantees:
+
+| Operation | Measured cost |
+|---|---|
+| Clear the whole screen | about 29 ms |
+| Fill a 232 × 44 region | about 3–4 ms |
+| One 64-character line in the largest compact text style (worst case) | up to 33 ms |
+| Short labels | a few ms |
+| Read the motion sample | about 15 µs |
+| Read a storage value | about 3 ms |
+| Write a storage value | 23–65 ms (median 31 ms), slower as storage fills |
+| Write a developer log line | about 0.1 ms |
+
+<Tip>
+  **Design rules that follow from these numbers**
+
+  - Redraw only when something changed, and repaint the changed region, not the whole screen.
+  - Split an expensive frame across several `draw` calls.
+  - Write storage only when a value changes, at most once per callback, and never in `on_enter`.
+</Tip>
+
+## Memory
+
+- **Linear memory** is fixed at the size you declare: 1 to 16 pages of 64 KiB. It does not grow.
+- **The C stack lives at the bottom of linear memory.** A stack overflow runs off the start of memory and traps, instead of silently overwriting your data.
+- **There is no heap allocator.** Use static and stack memory.
+- **The interpreter's own stack** is set separately (4–64 KiB, default 16 KiB).
+- **A package is at most 512 KiB.**
+
+## Drawing
+
+- The panel is 280 × 240, RGB565, origin top-left.
+- Drawing works only inside `orion_app_draw`. Anywhere else, drawing calls return `ORION_ERR_NOT_ALLOWED`.
+- Drawing is immediate. There is no frame buffer and no retained scene.
+- Text is one line per call, at most 64 bytes. It never wraps; characters that do not fit are dropped.
+
+## Input
+
+ORION turns touches into gestures and reports at most one per `update`, when the finger lifts: tap, or swipe left, right, up or down, with the point where the touch started. There is no continuous drag, no multi-touch, and no physical-control input.
+
+## Versioning
+
+User Apps target **API 1.0**, which is frozen. Future additions will raise the minor version, and apps built for 1.0 keep working. Incompatible changes would use new module names under API 2.0. ORION refuses a package whose API it does not implement. See [ABI versioning](/reference/abi#versioning).

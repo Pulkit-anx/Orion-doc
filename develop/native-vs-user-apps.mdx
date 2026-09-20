@@ -1,0 +1,80 @@
+---
+title: "Native apps vs User Apps"
+sidebarTitle: "Native vs User Apps"
+description: "Two different things on ORION are called apps. This page explains which is which, and which one you can actually build."
+icon: "code-compare"
+---
+
+ORION uses the word "app" for two different things. They share almost nothing, and mistaking one for
+the other is the most common source of confusion in this documentation.
+
+<Columns cols={2}>
+  <Card title="Native app" icon="tv" horizontal>
+    A MissionOS screen. Part of the device software, written by ANX Labs, fully trusted.
+  </Card>
+  <Card title="User App" icon="box" horizontal>
+    A sandboxed WebAssembly program you write, build and install yourself.
+  </Card>
+</Columns>
+
+## Side by side
+
+|  | **Native app (MissionOS screen)** | **ORION User App** |
+|---|---|---|
+| Written in | C++ | C, compiled to WebAssembly |
+| Ships as | part of the device software | an `.orionapp` package |
+| Installed by | reinstalling the whole device software | `orion install`, over USB |
+| Appears in the launcher | in one of the seven built-in categories | in the **User Apps** tab |
+| Trust | fully trusted; runs as system code | sandboxed and capability-gated |
+| Available APIs | anything internal to the device software | only the frozen [public ABI](/reference/abi) |
+| Memory | shares the device's memory | its own linear memory only |
+| Time limits | none | instruction limit and time budget per callback |
+| Storage | the device's own files | a private key/value store |
+| Can it stop the device? | yes | no — it is stopped and MissionOS continues `[VERIFIED]` |
+| Who can write one | ANX Labs | anyone with the SDK |
+
+## Which one can you build?
+
+**User Apps.** That is the whole developer story today, and it is the part of the platform that is
+verified on hardware.
+
+Native screens are part of the device software. There is no public documentation for building them,
+no published source, and adding one requires reinstalling the entire device software. If you need a
+device capability that the ABI does not expose, the answer is a future ABI version — not a native
+screen.
+
+<Note>
+  This is deliberate. The boundary is what makes a User App safe to install: a User App cannot reach
+  MissionOS internals, so a broken or hostile app cannot take the device down with it.
+</Note>
+
+## A third thing, briefly
+
+The device software also contains a small number of **native in-runtime apps** — for example the tap
+counter and the motion cockpit in the **Play** category. They are an older pattern that predates the
+User App Platform.
+
+They look like User Apps in the launcher, but they are not:
+
+- they are compiled into the device software, like any other native screen;
+- they are fully trusted;
+- they use none of the ABI and none of the capability checks.
+
+<Warning>
+  If you read anywhere that ORION "already had user apps before WebAssembly", this is what that
+  means. Those apps are native code. Nothing about them tells you anything about the sandbox.
+</Warning>
+
+## Related
+
+<Columns cols={3}>
+  <Card title="What is ORION?" icon="circle-question" href="/overview/what-is-orion">
+    The platform in one page.
+  </Card>
+  <Card title="User App concepts" icon="box" href="/user-apps/concepts">
+    The model your app lives in.
+  </Card>
+  <Card title="Security and containment" icon="shield" href="/user-apps/security">
+    What the sandbox does and does not promise.
+  </Card>
+</Columns>

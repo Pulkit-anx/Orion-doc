@@ -1,0 +1,71 @@
+---
+title: "Getting started"
+description: "What you need before you build an ORION User App: hardware, firmware, toolchain and the SDK."
+icon: "list-check"
+tag: "VERIFIED"
+---
+
+## What you need
+
+| You need | Details |
+|---|---|
+| **The ORION User App SDK Alpha** | Headers, the SDK runtime, the `orion` command and examples. See [Getting the SDK](#getting-the-sdk). |
+| **A computer** | Tested on macOS with Apple silicon. Other platforms are **not** tested. |
+| **Python 3** | Tested with Python 3.12. |
+| **wasi-sdk 34** | The clang and WebAssembly linker that compile apps. The [quickstart](/user-apps/quickstart#2-install-the-toolchain) shows how to install it. |
+| **pyserial** | A Python package, needed only for the commands that talk to a device over USB. |
+| **An ORION running developer firmware** | Required to install and run apps. Developer firmware includes the USB developer connection that `orion install` uses. |
+| **A USB cable** | To connect ORION to your computer. |
+
+## Getting the SDK
+
+The SDK Alpha currently ships inside the ORION developer source, in its `sdk/` directory. **There is
+no public download yet.** Commands in this documentation run from the root of that source tree, for
+example `sdk/bin/orion build`.
+
+<Warning>
+  **Developer hardware and firmware.** Apps install only on ORION hardware running developer
+  firmware. The only such hardware today is the ORION development prototype.
+</Warning>
+
+## Know the limits first
+
+User Apps run on a small device with none of the operating-system services you are used to.
+
+<AccordionGroup>
+  <Accordion title="C only, with no C library and no malloc" icon="c">
+    The SDK provides `memcpy`, `memset`, `memmove`, `memcmp` and number formatting. Nothing else.
+  </Accordion>
+  <Accordion title="One app at a time, inside the MissionOS loop" icon="rotate">
+    Your app is the active screen while it runs. There is no background execution.
+  </Accordion>
+  <Accordion title="Every callback has a budget" icon="gauge-high">
+    20,000 WebAssembly instructions and 100 ms by default. Exceeding either stops the app — it does
+    not stop ORION.
+  </Accordion>
+  <Accordion title="Drawing and storage writes are slow" icon="hourglass">
+    Tens of milliseconds each, not microseconds. Design around it from the first screen.
+  </Accordion>
+  <Accordion title="Input is taps and swipes" icon="hand-pointer">
+    No drag, no multi-touch, no physical controls. The left-edge back swipe never reaches your app.
+  </Accordion>
+  <Accordion title="No simulator" icon="microchip">
+    You test on a device. There is no host simulator.
+  </Accordion>
+</AccordionGroup>
+
+[Concepts](/user-apps/concepts) explains each of these in detail.
+
+## Next
+
+<Steps>
+  <Step title="Read User App concepts">
+    [User App concepts](/user-apps/concepts) — the model your app lives in.
+  </Step>
+  <Step title="Follow the quickstart">
+    [Quickstart](/user-apps/quickstart) — build, install and run an app.
+  </Step>
+  <Step title="Keep the ABI open while you write code">
+    [ABI 1.0 reference](/reference/abi) — every function, record and status code.
+  </Step>
+</Steps>

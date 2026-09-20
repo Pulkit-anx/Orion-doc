@@ -1,0 +1,75 @@
+---
+title: "The launcher"
+sidebarTitle: "Launcher"
+description: "MissionOS's launcher: a category rail and an icon grid covering seven categories of built-in applications, plus a tab for the apps you install."
+icon: "grid"
+---
+
+The launcher is the way into every application. Swipe up from Home to open it, swipe down to leave.
+
+<Frame caption="The launcher: a category rail above a grid of 48 px application icons">
+  <img src="/images/screens/S3-app-launcher.png" alt="MissionOS launcher showing the category rail — Instruments, Comms, Field, Space, Tools, Play, System — above a four-by-two grid of instrument icons." />
+</Frame>
+
+A rail of category chips runs across the top; the grid below shows the applications in the selected
+category. Swipe left or right to change category, tap an icon to open it.
+
+## The categories
+
+<Columns cols={2}>
+  <Card title="Instruments" icon="gauge" href="/missionos/screens#instruments">
+    Live sensor applications: Sensor Hub, Weather, Air Quality, Altimeter, Compass, Level, Motion
+    Lab, GPS, Light & Colour, Sound Meter, Data Logger.
+  </Card>
+  <Card title="Comms" icon="tower-broadcast" href="/missionos/screens#comms">
+    LoRa Messenger, Ground Station, Range Test, Wi-Fi Scanner, IR Remote.
+  </Card>
+  <Card title="Field Ops" icon="map" href="/missionos/screens#field-ops">
+    Field Logging, Beacon & Locate, Missions — the applications that make the device useful away
+    from a desk.
+  </Card>
+  <Card title="Space & AI" icon="satellite" href="/missionos/screens#space-and-ai">
+    ISS Tracker, Sun & Sky, Motion AI, Air Mouse.
+  </Card>
+  <Card title="Tools" icon="screwdriver-wrench" href="/missionos/screens#tools">
+    Stopwatch, Calculator, Torch, Paint, Morse Studio.
+  </Card>
+  <Card title="Play" icon="gamepad" href="/missionos/screens#play">
+    Snake, Breakout, Dice & Spinner, Reaction Timer — small games that exercise the sensors.
+  </Card>
+  <Card title="System" icon="gear" href="/missionos/screens#system">
+    Settings, Files, Power, Alerts, Charge face, System Update. Also reachable from Home.
+  </Card>
+  <Card title="User Apps" icon="box" href="/user-apps">
+    The apps you install yourself. Filled at run time, not built in.
+  </Card>
+</Columns>
+
+## The User Apps tab
+
+The first seven categories are fixed at build time. The eighth is not: it asks the
+[User App Platform](/user-apps) what is installed and builds its grid from the answer.
+
+- Tiles appear as soon as a package is installed — no restart.
+- Tapping a tile launches the app inside a dedicated app screen.
+- The tab pages when more apps are installed than fit one grid.
+- The left-edge back swipe always returns here, whatever the app is doing.
+
+<Frame caption="An app installed from the SDK appears beside the built-in applications">
+  <img src="/images/screens/S2-home-watchface.png" alt="MissionOS home screen, the starting point for reaching the launcher with a swipe up." />
+</Frame>
+
+## Disabled tiles
+
+Three tiles are present but deliberately inert — **BLE Scanner**, **Voice Recorder** and
+**App Link**. They are dimmed and will not open.
+
+They are shown rather than hidden because the launcher grid is part of the specification: the
+applications are designed, and their position in the category is settled. Hiding them would make
+the grid reflow when they arrive.
+
+## Status
+
+The launcher is implemented and verified on the development prototype, including the User Apps tab,
+paging, and launching an installed package. Per-application status is in the
+[screen reference](/missionos/screens).

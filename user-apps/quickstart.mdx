@@ -1,0 +1,185 @@
+---
+title: "Quickstart"
+description: "Build, inspect, install, launch and test your first ORION User App."
+icon: "rocket"
+tag: "VERIFIED"
+---
+
+This builds a tap counter that remembers its count, installs it on ORION, and runs it. Commands run from the root of the ORION developer source, where the SDK lives in `sdk/`.
+
+## 1. Understand what you are building
+
+A User App is C compiled to WebAssembly. It has two required callbacks — `orion_app_update` and `orion_app_draw` — and uses only the capabilities it declares. Read [Concepts](/user-apps/concepts) if you have not; the budgets there shape every app.
+
+## 2. Install the toolchain
+
+ORION apps are compiled with [wasi-sdk](https://github.com/WebAssembly/wasi-sdk) 34. On a Mac with Apple silicon:
+
+```bash
+mkdir -p ~/.orion/toolchains && cd ~/.orion/toolchains
+curl -LO https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-arm64-macos.tar.gz
+shasum -a 256 wasi-sdk-34.0-arm64-macos.tar.gz
+# expect 9c59398106b417f8f14913380fdf0097a8cc0ff4af9eb3ce0065a859e88d49e9
+tar xzf wasi-sdk-34.0-arm64-macos.tar.gz
+```
+
+On other platforms, use the matching archive from the same release. If you unpack it somewhere else, set `ORION_WASI_SDK` to that directory.
+
+Return to the ORION source root and check the setup:
+
+```bash
+sdk/bin/orion doctor
+```
+
+`doctor` reports the SDK, Python, the clang it found, and whether pyserial is available. pyserial is needed only for the device commands in steps 8 to 10.
+
+## 3. Create the app
+
+A project is a directory with a manifest and C sources:
+
+```text
+my_counter/
+├── orion.json
+├── src/
+│   └── main.c
+└── icon.pbm            optional, 48 × 48
+```
+
+Create `my_counter/src/main.c`:
+
+```c title="my_counter/src/main.c"
+#include <orion/orion.h>
+
+static int32_t count;
+
+void orion_app_on_enter(void)
+{
+    /* Restore the count saved by an earlier launch. */
+    int32_t saved;
+    if (orion_storage_read_str("count", &saved, sizeof saved) == (int32_t)sizeof saved) {
+        count = saved;
+    }
+}
+
+void orion_app_update(void)
+{
+    orion_touch_event_t touch;
+    if (orion_touch_read(&touch) == ORION_OK && touch.gesture == ORION_GESTURE_TAP) {
+        ++count;
+        orion_storage_write_str("count", &count, sizeof count); /* on change, not every frame */
+        orion_request_redraw();
+    }
+}
+
+void orion_app_draw(void)
+{
+    char text[12];
+    int32_t length = orion_format_int(text, count);
+    orion_display_clear(ORION_COLOR_BACKGROUND);
+    orion_display_text_str(24, 28, "MY COUNTER", ORION_COLOR_TEXT, ORION_TEXT_ROW);
+    orion_display_text(24, 96, text, length, ORION_COLOR_TEXT, ORION_TEXT_HERO);
+}
+```
+
+The app reads its saved count once when it opens, counts taps, saves only when the count changes, and redraws only after a tap.
+
+## 4. Write the manifest
+
+Create `my_counter/orion.json`:
+
+```json title="my_counter/orion.json"
+{
+  "id": "com.example.counter",
+  "name": "My Counter",
+  "version": "1.0.0",
+  "category": "APPS",
+  "capabilities": ["system", "display", "input", "storage"],
+  "limits": { "storage_quota_bytes": 256 },
+  "build": { "werror": true }
+}
+```
+
+- **`id`** identifies the app and its storage: 3–48 characters of `a-z 0-9 . _ -`, starting with a letter. Installing a package with the same id replaces the app and keeps its data.
+- **`capabilities`** lists everything the app may use. The build fails if the code calls anything else.
+- **`storage`** requires a quota.
+
+Every field is described in [Packaging](/user-apps/packaging#orionjson).
+
+## 5. Build
+
+```bash
+sdk/bin/orion build my_counter
+```
+
+`orion build` compiles your sources with the SDK runtime, checks every import against the ORION ABI and your capabilities, checks the lifecycle exports, memory and WebAssembly features, and writes the package. A successful build ends with a line like:
+
+```text
+OK (unsigned: the SDK Alpha does not sign packages)
+```
+
+If it fails, see [Troubleshooting](/user-apps/troubleshooting#build-errors).
+
+## 6. Inspect
+
+```bash
+sdk/bin/orion inspect my_counter/build/MyCounter-1.0.0.orionapp
+```
+
+`inspect` prints the package's manifest and limits, lists the module's imports, and re-checks the embedded WebAssembly module against the declared capabilities and memory.
+
+## 7. Understand the package
+
+The build wrote `my_counter/build/MyCounter-1.0.0.orionapp`. It contains the manifest, the icon if you provided one, the WebAssembly module, and a SHA-256 digest of the whole package. The digest detects corruption; it is not a signature. See [.orionapp format](/reference/app-format).
+
+## 8. Install
+
+Connect an ORION running developer firmware over USB, then:
+
+```bash
+sdk/bin/orion install my_counter/build/MyCounter-1.0.0.orionapp --port /dev/cu.usbmodem1101 --launch
+```
+
+Replace the port with your device's serial port. On macOS it usually starts with `/dev/cu.usbmodem`.
+
+ORION checks the package again before activating it — digest, manifest, imports, memory and exports. **A rejected package leaves the installed apps unchanged**, and the command prints the reason. ORION refuses to install while an app is running.
+
+<Tip>
+  Add `--expect-mac` with your board's MAC address to make the tool refuse any other connected board.
+</Tip>
+
+## 9. Launch
+
+`--launch` opened the app after installing it. To launch it again later, open the launcher, go to the **User Apps** tab and tap it, or run:
+
+```bash
+sdk/bin/orion launch com.example.counter --port /dev/cu.usbmodem1101
+```
+
+## 10. Test
+
+<Steps>
+  <Step title="Tap the screen a few times">
+    The count increases.
+  </Step>
+  <Step title="Swipe right from the left edge">
+    You return to the launcher. This gesture always belongs to ORION, and your app never sees it.
+  </Step>
+  <Step title="Open the app again">
+    The count is still there, read back from app storage.
+  </Step>
+  <Step title="Watch the developer log">
+    Lines from `orion_log` appear on the USB developer connection, prefixed with
+    `[app:com.example.counter]`.
+  </Step>
+  <Step title="Remove the app and its data">
+    ```bash
+    sdk/bin/orion uninstall com.example.counter --port /dev/cu.usbmodem1101
+    ```
+  </Step>
+</Steps>
+
+## Next
+
+- [Lifecycle](/user-apps/lifecycle) — when each callback runs.
+- [Capabilities](/user-apps/capabilities) — everything an app can call.
+- [Examples](/user-apps/examples) — region redraws, frame slicing and queued storage writes.

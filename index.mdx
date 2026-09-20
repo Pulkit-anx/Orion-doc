@@ -1,0 +1,160 @@
+---
+title: "ORION"
+sidebarTitle: "Introduction"
+description: "ORION is a pocket-satellite instrument platform. MissionOS is its mission-control interface, and the User App Platform lets you write and install your own sandboxed apps."
+icon: "house"
+mode: "wide"
+---
+
+<Frame caption="MissionOS — Home, the launcher, and the Sensor Hub">
+  <Columns cols={3}>
+    <img src="/images/screens/S2-home-watchface.png" alt="MissionOS home screen: a large split clock over the date, with temperature, humidity and air-quality chips beneath." />
+    <img src="/images/screens/S3-app-launcher.png" alt="MissionOS launcher: a category rail across the top and a grid of instrument icons below." />
+    <img src="/images/screens/I1-sensor-hub.png" alt="MissionOS Sensor Hub: a three-by-three grid of telemetry tiles." />
+  </Columns>
+</Frame>
+
+**ORION is a pocket satellite you hold in your hand.** A 280 × 240 colour touch instrument panel,
+motion sensing, audio, and an operating environment built around the idea that every use is a
+mission. It is a project of ANX Labs, and it is under active development.
+
+Three things make up the platform:
+
+<Columns cols={3}>
+  <Card title="MissionOS" icon="tv" href="/missionos">
+    The interface: a launcher, 47 specified screens across seven categories, a complete navigation
+    grammar and an instrument-grade design language.
+  </Card>
+  <Card title="User App Platform" icon="box" href="/user-apps">
+    Write an app in C, compile it to WebAssembly, install it over USB. It runs sandboxed, under
+    budgets, and cannot take the device down.
+  </Card>
+  <Card title="The hardware" icon="microchip" href="/reference/hardware">
+    An ESP32-S3 handheld with a colour touch panel, six-axis motion, a microphone and audio out.
+  </Card>
+</Columns>
+
+## MissionOS
+
+A mission-control interface for a pocket satellite. Instruments read like telemetry panels, logging
+sessions have a brief and a debrief, and the device can act as either the satellite or the ground
+station.
+
+The design language is called **Ground Control**: dark, instrument-grade, calm. Telemetry numerals
+in mono, thin rules, and colour used as signal rather than decoration. One glance answers *what is
+the value, and is it OK*.
+
+<Columns cols={4}>
+  <Frame caption="Compass"><img src="/images/screens/I5-compass.png" alt="Compass screen: a circular dial with north marked in red and the heading in the centre." /></Frame>
+  <Frame caption="Motion Lab"><img src="/images/screens/I7-motion-lab.png" alt="Motion Lab: live acceleration traces with peak and drop tabs." /></Frame>
+  <Frame caption="ISS Tracker"><img src="/images/screens/X1-iss-tracker.png" alt="ISS Tracker: a list of upcoming passes with an acquisition-to-loss arc." /></Frame>
+  <Frame caption="Missions"><img src="/images/screens/F3-missions.png" alt="Missions: a list of guided field missions, each with its own accent colour." /></Frame>
+</Columns>
+
+<Card title="Explore MissionOS" icon="compass" href="/missionos" horizontal>
+  The design language, the navigation grammar, the launcher, and every screen.
+</Card>
+
+## Built for exploration
+
+Seven categories of instruments and tools, plus a tab for the apps you install yourself.
+
+| Category | What is in it |
+|---|---|
+| **Instruments** | Sensor Hub, Weather, Air Quality, Altimeter, Compass, Level, Motion Lab, GPS, Light & Colour, Sound Meter, Data Logger |
+| **Comms** | LoRa Messenger, Ground Station, Range Test, Wi-Fi Scanner, IR Remote |
+| **Field Ops** | Field Logging, Beacon & Locate, Missions |
+| **Space & AI** | ISS Tracker, Sun & Sky, Motion AI, Air Mouse |
+| **Tools** | Stopwatch, Calculator, Torch, Paint, Morse Studio |
+| **Play** | Snake, Breakout, Dice & Spinner, Reaction Timer |
+| **System** | Settings, Files, Power, Alerts, Charge face, System Update |
+
+## Build your own
+
+The User App Platform runs WebAssembly apps in a sandbox alongside MissionOS. You write C, the SDK
+compiles and packages it, and ORION validates it twice before anything runs.
+
+<CodeGroup>
+
+```c sdk/examples/tap_counter/src/main.c (abridged)
+#include <orion/orion.h>
+
+static int32_t count;
+
+void orion_app_on_enter(void)
+{
+    int32_t stored;
+    if (orion_storage_read_str("tap_count", &stored, sizeof stored) == (int32_t)sizeof stored) {
+        count = stored;
+    }
+}
+
+void orion_app_update(void)
+{
+    orion_touch_event_t touch;
+    if (orion_touch_read(&touch) != ORION_OK || touch.gesture != ORION_GESTURE_TAP) {
+        return;
+    }
+    ++count;
+    orion_storage_write_str("tap_count", &count, sizeof count);
+    orion_request_redraw();
+}
+
+void orion_app_draw(void)
+{
+    char line[24];
+    int32_t n = orion_copy_str(line, "Taps: ");
+    n += orion_format_int(line + n, count);
+    orion_display_text(24, 96, line, n, ORION_COLOR_TEXT, ORION_TEXT_HERO_COMPACT);
+}
+```
+
+```bash Build and install
+sdk/bin/orion build my_counter
+sdk/bin/orion install my_counter/build/MyCounter-1.0.0.orionapp \
+  --port /dev/cu.usbmodem1101 --launch
+```
+
+</CodeGroup>
+
+The app appears in the launcher's **User Apps** tab. Swipe from the left edge to leave it.
+
+<Columns cols={2}>
+  <Card title="Write your first app" icon="rocket" href="/user-apps/quickstart">
+    Working app on the device, start to finish.
+  </Card>
+  <Card title="How the platform works" icon="microchip" href="/user-apps/runtime">
+    WAMR, instruction budgets, and what happens when an app misbehaves.
+  </Card>
+</Columns>
+
+## The platform, at a glance
+
+| | |
+|---|---|
+| **Interface** | 280 × 240 landscape colour touch panel, seven launcher categories, 47 specified screens |
+| **Runtime** | WAMR 2.4.5 fast interpreter, 4 MiB PSRAM arena, ~252 Hz with an app running |
+| **App contract** | ABI 1.0, frozen — 5 capability modules, 13 functions, drift-checked against the firmware |
+| **Containment** | Per-callback instruction limit and wall-clock budget; a failing app is stopped, MissionOS continues |
+| **Packaging** | `.orionapp` — manifest, icon, WebAssembly module, SHA-256 digest |
+| **Storage** | A private key/value store per app, on its own flash partition, kept across restarts |
+
+## Where to go next
+
+<Columns cols={3}>
+  <Card title="What is ORION?" icon="circle-question" href="/overview/what-is-orion">
+    The system in one page.
+  </Card>
+  <Card title="Screen reference" icon="table-list" href="/missionos/screens">
+    Every screen, with renders.
+  </Card>
+  <Card title="ABI 1.0" icon="plug" href="/reference/abi">
+    The frozen app contract.
+  </Card>
+</Columns>
+
+---
+
+**ORION is under active development.** MissionOS and the User App Platform run today on a
+development prototype; some instruments are waiting on sensors the prototype does not carry, and
+each screen says which. The full picture is on [Development status](/overview/status).

@@ -1,0 +1,127 @@
+---
+title: "Capabilities"
+description: "The five ORION capabilities — system, display, input, motion and storage — with what each call does and what it costs."
+icon: "key"
+tag: "VERIFIED"
+---
+
+An app declares its capabilities in `orion.json`. Each capability unlocks one group of ORION functions. Calling a function from an undeclared capability fails the build, and ORION refuses such a package on install.
+
+Every call follows the same rules:
+
+- **Signed results.** A call returns a non-negative value or a negative [status code](/reference/abi#status-codes).
+- **Pointers.** A pointer must point into the app's own memory for the length given. An out-of-range pointer stops the app.
+- **Budget.** Time inside a call counts toward the callback's time budget.
+
+Include one header for everything:
+
+```c
+#include <orion/orion.h>
+```
+
+## system
+
+Lifecycle support, time and logging. Almost every app declares it.
+
+| Call | Returns | Notes |
+|---|---|---|
+| `orion_api_version()` | `0x00010000` for API 1.0 | `(major << 16) \| minor` |
+| `orion_time_ms()` | Milliseconds since ORION started | Wraps after about 24 days |
+| `orion_log(text, length)` | `ORION_OK`, or `ORION_ERR_LIMIT` over 160 bytes | One developer-log line prefixed `[app:<id>]`. Never blocks; may be dropped if nothing is reading. About 0.1 ms. |
+| `orion_log_str(text)` | as above | For NUL-terminated strings |
+| `orion_request_redraw()` | `ORION_OK` | ORION calls `orion_app_draw` after the current `update`. A request made inside `draw` is kept for the next update. |
+
+## display
+
+Drawing on the 280 × 240 RGB565 panel. Drawing works only inside `orion_app_draw`; elsewhere every call returns `ORION_ERR_NOT_ALLOWED`. Drawing is immediate — there is no frame buffer.
+
+| Call | Notes |
+|---|---|
+| `orion_display_clear(color)` | Fills the screen. About 29 ms. |
+| `orion_display_fill_rect(x, y, w, h, color)` | Clipped to the screen. `x` and `y` within ±1024; `w` and `h` 1–1024. Cost grows with area: a 232 × 44 region takes about 3–4 ms. |
+| `orion_display_text(x, y, text, length, color, style)` | One line, at most 64 bytes. `y` is the top of the line. Never wraps; characters past the right edge are dropped; non-printable bytes draw as `?`. Up to 33 ms for a long line in a large style. |
+| `orion_display_text_str(x, y, text, color, style)` | For NUL-terminated strings |
+
+**Colours** are RGB565 (`orion_color_t`). Use `ORION_RGB565(r, g, b)` for your own, or the ORION palette:
+
+| Constant | Use |
+|---|---|
+| `ORION_COLOR_BACKGROUND` | Screen ground |
+| `ORION_COLOR_SURFACE` | Raised surfaces |
+| `ORION_COLOR_BORDER` | Borders, dividers |
+| `ORION_COLOR_DIM` | Disabled text, footnotes |
+| `ORION_COLOR_MUTED` | Secondary labels |
+| `ORION_COLOR_TEXT` | Primary text |
+| `ORION_COLOR_ACCENT` | Accent strokes |
+| `ORION_COLOR_DANGER` | Critical states |
+| `ORION_COLOR_OK` | Good states |
+| `ORION_COLOR_WARN` | Caution |
+
+**Text styles**, largest first: `ORION_TEXT_HERO`, `ORION_TEXT_HERO_COMPACT`, `ORION_TEXT_TITLE`, `ORION_TEXT_ROW`, `ORION_TEXT_BODY`, `ORION_TEXT_CAPTION`, `ORION_TEXT_SMALL`, `ORION_TEXT_MICRO`.
+
+## input
+
+Tap and swipe gestures. ORION reports at most one gesture per `update`, when the finger lifts.
+
+```c
+typedef struct orion_touch_event {
+    uint32_t struct_size; /* sizeof(orion_touch_event_t) = 16 */
+    uint32_t gesture;     /* ORION_GESTURE_* */
+    int32_t x, y;         /* where the touch started */
+} orion_touch_event_t;
+```
+
+| Call | Notes |
+|---|---|
+| `orion_touch_read(&event)` | Sets `struct_size` and reads this update's gesture. `gesture` is `ORION_GESTURE_NONE` when there was none. |
+| `orion_input_gesture_read(&event)` | The underlying call. Returns `ORION_ERR_INVALID_ARG` if `struct_size` is less than 16. |
+
+Gestures: `ORION_GESTURE_NONE`, `ORION_GESTURE_TAP`, `ORION_GESTURE_SWIPE_LEFT`, `ORION_GESTURE_SWIPE_RIGHT`, `ORION_GESTURE_SWIPE_UP`, `ORION_GESTURE_SWIPE_DOWN`.
+
+<Note>
+  The left-edge back swipe is never reported: ORION uses it to close the app. There is no drag, multi-touch or physical-control input in API 1.0. Read input in `update` — a gesture belongs to the update in which it is reported.
+</Note>
+
+## motion
+
+A copy of ORION's latest acceleration and tilt reading, in fixed-point integers.
+
+```c
+typedef struct orion_imu_sample {
+    uint32_t struct_size;  /* sizeof(orion_imu_sample_t) = 36 */
+    uint32_t flags;        /* reserved, 0 */
+    uint32_t timestamp_ms; /* when the copy was made (orion_time_ms clock) */
+    uint32_t sequence;     /* advances when the reading changes */
+    int32_t ax_mg, ay_mg, az_mg;   /* acceleration, milli-g */
+    int32_t pitch_cdeg, roll_cdeg; /* tilt, hundredths of a degree */
+} orion_imu_sample_t;
+```
+
+| Call | Notes |
+|---|---|
+| `orion_imu_read(&sample)` | Sets `struct_size` and copies the sample. About 15 µs. |
+| `orion_motion_snapshot(&sample)` | The underlying call. Returns `ORION_ERR_INVALID_ARG` if `struct_size` is less than 36. |
+
+If `sequence` stops advancing, the data is stale; API 1.0 makes no other validity claim. **Gyroscope and magnetometer data are not exposed.**
+
+## storage
+
+A small key/value store private to the app. See [Storage](/user-apps/storage) for the rules — writes are slow and need care.
+
+| Call | Returns |
+|---|---|
+| `orion_storage_read(key, key_length, buffer, capacity)` | Bytes read, `ORION_ERR_NOT_FOUND`, `ORION_ERR_LIMIT` if the value is larger than `capacity` |
+| `orion_storage_write(key, key_length, data, length)` | `ORION_OK`, `ORION_ERR_NO_SPACE`, `ORION_ERR_LIMIT`, `ORION_ERR_IO` |
+| `orion_storage_delete(key, key_length)` | `ORION_OK` or `ORION_ERR_NOT_FOUND` |
+| `orion_storage_list(index, name, capacity)` | Name length, or `ORION_ERR_NOT_FOUND` past the last key |
+| `orion_storage_read_str`, `_write_str`, `_delete_str` | The same, with a NUL-terminated key |
+
+## Helpers (no capability)
+
+`<orion/util.h>` runs entirely inside your app and needs no capability: `memcpy`, `memset`, `memmove`, `memcmp`, `orion_format_int`, `orion_format_fixed` and `orion_copy_str`. There is no other C library.
+
+## Not available
+
+API 1.0 has no capability for radios, positioning, environmental sensors, light, sound, files, networking, physical controls or other apps. Capabilities for Rev02 modules are not defined.
+
+Complete signatures, records and status codes: [ABI 1.0 reference](/reference/abi).

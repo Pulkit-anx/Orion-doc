@@ -1,0 +1,125 @@
+---
+title: "MissionOS architecture"
+sidebarTitle: "Architecture"
+description: "How MissionOS is structured: the two kinds of software it runs, one loop and one screen, start-up, and how drawing works."
+icon: "sitemap"
+---
+
+MissionOS is the software that runs on ORION: its screens, navigation, data model, drivers and the
+runtime for User Apps. This page describes how it is built today on the development prototype.
+
+The layered view of the whole platform is on
+[What is ORION?](/overview/what-is-orion#how-the-layers-fit-together).
+
+## Two kinds of software
+
+MissionOS runs two very different kinds of code.
+
+<Columns cols={2}>
+  <Card title="MissionOS screens" icon="tv">
+    Part of the device software. They are compiled into it, share its memory, read the shared data
+    model directly, and draw with the ORION UI framework. Adding or changing one means changing and
+    rebuilding the whole device software.
+  </Card>
+  <Card title="User Apps" icon="box">
+    Separate programs, compiled to WebAssembly and installed while ORION is running. They cannot see
+    MissionOS's memory, screens, drivers or data model. They reach the device only through the
+    [capability API](/reference/abi), and only for the capabilities they declare.
+  </Card>
+</Columns>
+
+## One loop, one screen
+
+MissionOS runs as a single loop. On each pass it:
+
+<Steps>
+  <Step title="Read input and sensors">
+    The touch panel and the fitted sensors are read.
+  </Step>
+  <Step title="Classify the gesture">
+    The touch is turned into a tap or a swipe, in the same pass it was read.
+  </Step>
+  <Step title="Refresh the shared data model">
+    Live readings are written in; everything else keeps its demo value. See
+    [Where MissionOS data comes from](/missionos/data-model).
+  </Step>
+  <Step title="Run the active screen">
+    The screen handles the gesture and redraws what changed.
+  </Step>
+</Steps>
+
+Because input and data are updated before the screen runs, a screen always sees the gesture and the
+readings from the same pass.
+
+Exactly one screen is active at a time. A screen manager switches between them, and each screen
+remembers where Back should return to. A User App runs inside a dedicated app screen in the same
+loop, so while an app is open it *is* the active screen — and the system back gesture is handled
+before the app sees any input.
+
+<Note>
+  The loop has no fixed rate. On the development prototype a User App's update callback runs roughly
+  250 times a second, measured. That is an observation, not a guarantee, and it is not something an
+  app may depend on.
+</Note>
+
+## Start-up
+
+On the development prototype, ORION starts like this:
+
+<Steps>
+  <Step title="Hardware start-up">
+    Display, touch and the fitted sensors.
+  </Step>
+  <Step title="Splash and self-test">
+    The self-test screen is built, but most of its checks are placeholders and do not prove the
+    hardware works.
+  </Step>
+  <Step title="First-run wizard">
+    Shown at every start, because settings are not saved.
+  </Step>
+  <Step title="Home" />
+</Steps>
+
+<Warning>
+  The boot ladder is not evidence. Most self-test rows report a fixed result regardless of what the
+  hardware did.
+</Warning>
+
+## Drawing
+
+Screens draw directly to the display; there is no full-screen frame buffer. A screen redraws only
+the regions that changed, because clearing and repainting the whole 280 × 240 panel takes tens of
+milliseconds.
+
+The same rule applies to User Apps — see
+[constraints and budgets](/user-apps/concepts#budgets-and-costs).
+
+## What a modular design would add
+
+A modular successor design exists on paper. It would give MissionOS responsibilities it does not
+have today:
+
+- identifying attached modules at start-up, and making their capabilities available to screens and
+  applications;
+- detecting when the set of modules has changed since the last start;
+- recording which hardware produced each logged reading;
+- updating MissionOS without affecting installed applications.
+
+<Note>
+  All four are `[DESIGN]`. None is implemented, and the development prototype has no expansion
+  connection.
+</Note>
+
+## Related
+
+<Columns cols={3}>
+  <Card title="System data" icon="database" href="/missionos/data-model">
+    Which readings are real.
+  </Card>
+  <Card title="Interface and navigation" icon="hand-pointer" href="/missionos/navigation">
+    How you move around MissionOS.
+  </Card>
+  <Card title="Platform architecture" icon="layer-group" href="/reference/architecture">
+    The reference view.
+  </Card>
+</Columns>

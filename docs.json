@@ -1,0 +1,148 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "ORION",
+  "description": "Documentation for ORION: the MissionOS device software and the ORION User App Platform.",
+  "colors": {
+    "primary": "#2E7FB8",
+    "light": "#5AA0D2",
+    "dark": "#175579"
+  },
+  "appearance": {
+    "default": "dark",
+    "strict": true
+  },
+  "favicon": "/favicon.png",
+  "logo": {
+    "light": "/logo/wordmark.png",
+    "dark": "/logo/wordmark.png"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "index",
+              "overview/what-is-orion",
+              "overview/status"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "MissionOS",
+        "groups": [
+          {
+            "group": "MissionOS",
+            "pages": [
+              "missionos/index",
+              "missionos/design-language",
+              "missionos/navigation",
+              "missionos/launcher",
+              "missionos/screens"
+            ]
+          },
+          {
+            "group": "Under the interface",
+            "pages": [
+              "missionos/architecture",
+              "missionos/data-model"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Develop",
+        "groups": [
+          {
+            "group": "Developing for ORION",
+            "pages": [
+              "develop/index",
+              "develop/getting-started",
+              "develop/native-vs-user-apps"
+            ]
+          },
+          {
+            "group": "Beyond User Apps",
+            "pages": [
+              "develop/native-os",
+              "develop/payloads"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "User Apps",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": [
+              "user-apps/index",
+              "user-apps/quickstart",
+              "user-apps/concepts"
+            ]
+          },
+          {
+            "group": "Building apps",
+            "pages": [
+              "user-apps/sdk",
+              "user-apps/packaging",
+              "user-apps/capabilities",
+              "user-apps/lifecycle",
+              "user-apps/storage",
+              "user-apps/examples"
+            ]
+          },
+          {
+            "group": "Platform internals",
+            "pages": [
+              "user-apps/runtime",
+              "user-apps/security",
+              "user-apps/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/index",
+              "reference/status-labels",
+              "reference/terminology",
+              "reference/architecture",
+              "reference/hardware"
+            ]
+          },
+          {
+            "group": "User App Platform",
+            "pages": [
+              "reference/abi",
+              "reference/app-format",
+              "reference/sdk"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Support",
+        "groups": [
+          {
+            "group": "Support",
+            "pages": [
+              "support/index",
+              "support/troubleshooting",
+              "support/known-limitations",
+              "support/faq"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

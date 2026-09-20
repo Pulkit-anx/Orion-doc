@@ -1,0 +1,64 @@
+---
+title: "User App troubleshooting"
+description: "Fix build errors, rejected installs, apps that are stopped at runtime, and apps that do not appear in the launcher."
+icon: "wrench"
+tag: "VERIFIED"
+---
+
+## Toolchain
+
+| Symptom | Fix |
+|---|---|
+| `doctor` reports the toolchain missing | Install wasi-sdk 34 in `~/.orion/toolchains/`, set `ORION_WASI_SDK` to its directory, or pass `--toolchain DIR` before the command. |
+| `doctor` reports pyserial missing | Building still works. Install pyserial for the Python that runs `orion`, or set `ORION_PYTHON` to a Python that has it. |
+| `device commands need pyserial` | As above. |
+
+## Build errors
+
+| Message | Fix |
+|---|---|
+| `calls orion_motion_snapshot ... does not declare the "motion" capability` | Add the capability to `capabilities` in `orion.json`. The same applies to any undeclared capability. |
+| `undefined symbol: printf` | ORION apps have no C library. Use `<orion/util.h>` for memory and formatting, and `orion_log` for output. |
+| `does not define orion_app_draw()` | Define both `orion_app_update` and `orion_app_draw`. |
+| `unknown key "..."` | A misspelt field in `orion.json`. |
+| `limits.instructions must be an integer in 1000..1000000` | A limit outside the range ORION accepts. See [limits](/user-apps/packaging#limits). |
+| `initial memory too small` | Raise `limits.memory_pages` or lower `build.stack_bytes`. |
+| `opcode 0x.. (SIMD) is not supported by ORION` | The code uses a WebAssembly feature ORION's runtime does not enable. Remove it, or check compiler flags you added. |
+| Warning that a capability is declared but not used | Harmless, but remove the capability if the app does not need it. |
+
+## Install is rejected
+
+The command prints `rejected reason="..."`. The reason names the problem, and **the installed apps are unchanged**.
+
+| Situation | What to do |
+|---|---|
+| Any rejection | Run `orion inspect` on the package to re-check it on your computer. |
+| An app is running on ORION | Leave the app with the back gesture, then install again. ORION refuses to install while an app is running. |
+| The firmware does not implement the package's API | The device needs developer firmware that implements API 1.0. |
+| Corrupted or truncated transfer | Rebuild and install again. |
+| The tool refuses the device with `--expect-mac` | You are connected to a different board, or the MAC is mistyped. |
+
+## App is stopped while running
+
+ORION shows **APP STOPPED** and returns to the launcher. The cause is one of:
+
+| Cause | Typical reason | Fix |
+|---|---|---|
+| Time budget exceeded | Clearing the screen and drawing large text in one frame; storage writes in `on_enter`; several storage writes in one callback | Redraw regions, split frames, and write storage at most once per callback. See [budgets and costs](/user-apps/concepts#budgets-and-costs). |
+| Instruction limit exceeded | A long or endless loop | Spread work across updates, or raise `limits.instructions`. |
+| Out-of-bounds memory or stack overflow | A bad index or pointer; deep recursion or large stack arrays | Fix the bug, or raise `build.stack_bytes` and `limits.memory_pages`. |
+| Pointer outside app memory | Passing a wrong pointer or length to an ORION call | Check buffer sizes passed to ORION. |
+
+The developer log on the USB developer connection records why the app was stopped.
+
+## Other problems
+
+| Symptom | Cause and fix |
+|---|---|
+| App does not appear in User Apps | Confirm the install printed success. With many apps installed, swipe up in the User Apps tab to page. |
+| Screen flickers | The app clears the whole screen on every frame. Repaint only changed regions. |
+| Text is cut off | Text never wraps and lines are limited to 64 bytes. Break long text into lines yourself. |
+| Swipes from the left edge never reach the app | By design: that gesture is ORION's back gesture. |
+| Drawing does nothing | Drawing works only inside `orion_app_draw`. Elsewhere calls return `ORION_ERR_NOT_ALLOWED`. |
+| Motion values never change | Check that `sequence` advances. If it does not, the reading is stale. |
+| Log lines missing | Logs are dropped when nothing is reading the USB connection, and lines over 160 bytes are refused. |

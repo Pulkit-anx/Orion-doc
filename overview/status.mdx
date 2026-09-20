@@ -1,0 +1,156 @@
+---
+title: "Development status"
+sidebarTitle: "Development status"
+description: "What is running, what has been measured on hardware, what is designed and what is planned — the single detailed status reference for ORION."
+icon: "list-check"
+mode: "wide"
+---
+
+ORION is under active development. **This is the one page where implementation status is covered in
+detail** — other pages describe what something does and link here.
+
+## In one paragraph
+
+MissionOS and the User App Platform both run on a development prototype. The interface is complete:
+boot, navigation, the launcher, the screen system, the UI framework and the touch layer. The User
+App Platform is functionally complete for v1 and was validated on hardware. What the prototype
+lacks is sensors: it measures motion and sound, and instruments built for environment, position,
+timekeeping and radio present prototype values until the hardware they were designed for exists.
+
+## The four states
+
+| State | Meaning |
+|---|---|
+| `[VERIFIED]` | Observed working on the development prototype, with recorded evidence |
+| `[IMPLEMENTED]` | Built and running. Hardware verification is not claimed |
+| `[DESIGNED]` | Specified in the design package; not built |
+| `[CONCEPT]` | Product direction. Not designed in detail, not built |
+
+Screens carry a [second axis as well](/missionos/screens) — whether their values are measured —
+because a complete screen and a fitted sensor are different things.
+
+## Measured on hardware
+
+These come from the platform's own validation runs, not from estimates.
+
+| Measurement | Value |
+|---|---|
+| App launch to first frame | 62.6 ms (read 4.2, digest 0.25, load 2.2, instantiate 2.1, `on_enter` 0.3, first draw 52.5) |
+| Loop rate — launcher | 268 Hz |
+| Loop rate — native app | 271 Hz |
+| Loop rate — WebAssembly app | 252 Hz, a 7.0 % cost |
+| Teardown on exit | 0.35–0.37 ms |
+| Full-screen clear | 28.9 ms |
+| Longest single text draw | 32.9 ms worst case, 64 characters in the largest style |
+| Storage write | 23–65 ms over 100 writes, median 31 ms |
+| Storage read | ≈ 6 ms for a 4-byte value |
+| Boot to ready | 1,036 ms |
+| 25 launch/tap/back cycles | Free memory and largest block **identical** before and after |
+
+Failure containment, also measured: an infinite loop is stopped by the instruction limit after
+6.1 ms; a host-call storm hits the wall-clock budget after 115.5 ms; an out-of-bounds access traps
+after 0.15 ms. In every case resources were released, memory integrity held, another app relaunched,
+and **the device did not reboot**.
+
+## Test results
+
+| Suite | Result |
+|---|---|
+| SDK host tests | 78 / 78 |
+| SDK host + device + regression | 109 / 109 |
+| Platform suite, full run | 44 / 44 |
+
+Coverage includes package parsing over every package, deliberately hostile packages, rejected
+projects, install and uninstall, lifecycle, storage, motion, contained failures and launch cycles.
+
+## MissionOS
+
+| Area | State | Notes |
+|---|---|---|
+| Boot, navigation, launcher, Quick Settings | `[VERIFIED]` | Checked by hand on the prototype |
+| Screen system and UI framework | `[IMPLEMENTED]` | 42 of the 47 specified screens are built |
+| Touch and gesture layer | `[VERIFIED]` | Including the system back gesture |
+| User Apps tab and launching apps | `[VERIFIED]` | Including paging |
+| Saved settings | `[NOT IMPLEMENTED]` | Settings reset at every start, so the first-run wizard runs every time |
+| Power-on self-test | `[IMPLEMENTED]` | Most checks are placeholders; the boot ladder is not evidence that hardware works |
+| Software update | `[NOT IMPLEMENTED]` | The update screen exists; no mechanism behind it |
+| Physical controls | `[NOT IMPLEMENTED]` | No knob or button driver. Everything is touch |
+| Indicator light and vibration | `[DESIGNED]` | The feedback language is specified; the prototype has no LED or motor |
+
+## Sensing on the prototype
+
+| Reading | State | Notes |
+|---|---|---|
+| Acceleration, tilt, g-force | `[VERIFIED]` | Live, and available to User Apps |
+| Relative sound level | `[IMPLEMENTED]` | Live, uncalibrated, no frequency spectrum |
+| Audio output | `[IMPLEMENTED]` | Tones and stored sounds |
+| Ambient light | `[IMPLEMENTED]` | A driver exists; no light sensor responds on this prototype |
+| Environment — temperature, humidity, pressure, air quality | `[NOT IMPLEMENTED]` | No sensor fitted |
+| Positioning | `[NOT IMPLEMENTED]` | No receiver fitted |
+| Timekeeping | `[NOT IMPLEMENTED]` | No clock driver; MissionOS shows a fixed time |
+| Battery measurement | `[NOT IMPLEMENTED]` | Powered over USB |
+| Long-range radio | `[NOT IMPLEMENTED]` | No radio fitted |
+| Wi-Fi and Bluetooth LE | `[NOT IMPLEMENTED]` | The processor supports both; the device software does not use them |
+| Compass heading | `[NOT IMPLEMENTED]` | The motion sensor has no magnetometer |
+
+## User App Platform
+
+| Area | State |
+|---|---|
+| Runtime — WAMR 2.4.5 fast interpreter, ORION port | `[VERIFIED]` |
+| Capability API — ABI 1.0, 5 modules, 13 functions | `[VERIFIED]`, frozen and drift-checked |
+| `.orionapp` format and package validation | `[VERIFIED]`, including hostile packages |
+| Installer, registry, supervisor | `[VERIFIED]` |
+| Per-app storage on its own partition | `[VERIFIED]` |
+| Failure containment | `[VERIFIED]`, no reboot in any tested case |
+| SDK Alpha — headers, runtime, `orion` command, examples | `[VERIFIED]` on macOS with Apple silicon |
+| Package signing and a trust store | `[NOT IMPLEMENTED]` |
+| A non-developer install path, app store, over-the-air distribution | `[NOT IMPLEMENTED]` |
+| Write-behind storage, a host simulator, a C++ SDK | `[NOT IMPLEMENTED]` |
+
+<Warning>
+  The platform is **functionally complete for v1 and not production-secure.** Packages are unsigned,
+  installation uses a USB developer connection, and the sandbox has not been audited against a
+  determined attacker. See [Security and containment](/user-apps/security).
+</Warning>
+
+## Designed, not built
+
+Specified in the MissionOS design package, and waiting on hardware or a later phase:
+
+- the indicator-light and haptic feedback language;
+- the physical control grammar — two knobs and two buttons, with the hint bar that labels them;
+- Graph Viewer, BLE Scanner, Voice Recorder and App Link, all deliberately deferred;
+- light and colour sensing, which the prototype's driver is ready for.
+
+## Product direction
+
+A modular successor design exists on paper: a base unit with more built-in capability, plus
+attachable modules for long-range radio, environmental sensing, optics, audio and your own hardware.
+
+None of it exists, no availability or pricing is published, and the interface specification for
+attaching your own hardware is [not published yet](/develop/payloads).
+
+## What ORION does not claim
+
+- **Power.** No battery runtime, charging time or ingress-protection rating is published.
+- **Certification.** ORION has no product certification. It is not space-qualified and not flight-qualified.
+- **Air quality.** The planned index is VOC-based. It is not a particulate or health measurement.
+- **Sound.** Levels are relative and uncalibrated.
+- **Long-range radio.** Up to 1 km line-of-sight, outdoors, with a radio module fitted.
+- **Modules.** Attach and remove them only while ORION is powered off. They are not hot-swappable.
+- **App security.** The User App Platform is a developer platform, not a production-secure one.
+
+## Related
+
+<Columns cols={3}>
+  <Card title="Screen reference" icon="table-list" href="/missionos/screens">
+    Per-screen interface and data state.
+  </Card>
+  <Card title="Known limitations" icon="triangle-exclamation" href="/support/known-limitations">
+    Where these gaps bite in practice.
+  </Card>
+  <Card title="Status labels" icon="tag" href="/reference/status-labels">
+    What each label means.
+  </Card>
+</Columns>

@@ -1,0 +1,48 @@
+---
+title: "Known limitations"
+description: "Current limitations of MissionOS, the development prototype and the User App Platform. Recorded for accuracy, not as a promise of when they change."
+icon: "triangle-exclamation"
+---
+
+Limitations of the development prototype and the platform as they stand, recorded for accuracy rather than as a promise of when they change. The full picture is on [Development status](/overview/status).
+
+## MissionOS
+
+| Limitation | Impact |
+|---|---|
+| Most readings are demo data | Temperature, humidity, pressure, air quality, heading, position, time, battery, radio and storage-card values on screen are not measurements. See [data sources](/missionos/data-model). |
+| The status bar is demo data | Time, battery, radio and positioning indicators do not reflect the device. |
+| Settings are not saved | Settings reset at every start, and the first-run wizard runs every time. |
+| Most self-test checks are placeholders | The boot self-test is not evidence that hardware works. |
+| No physical controls | Snake and Breakout are not playable. Always use touch. |
+| No indicator light or vibration | Designed light and haptic feedback is not implemented. |
+| No firmware update mechanism | The System Update screen exists without one. |
+| Wi-Fi and Bluetooth LE unused | The processor supports them; MissionOS does not use them. |
+| No light sensor detected | Light and colour readings are not available on the prototype. |
+| Sound level is relative | Uncalibrated, with no frequency spectrum. |
+
+## User App Platform
+
+| Limitation | Impact |
+|---|---|
+| Not production-secure | Packages are unsigned; no trust store, publisher identity or anti-rollback. See [Security](/user-apps/security). |
+| Developer firmware and USB only | Any computer that can open ORION's USB port can install an app. No store or over-the-air install. |
+| One app at a time | Apps run in MissionOS's own loop. No concurrency. |
+| Synchronous storage writes | 23–65 ms each; at most one per callback, never in `on_enter`. |
+| Immediate drawing | No frame buffer. A full clear is about 29 ms; repaint regions instead. |
+| C only | No C library, no `malloc`, no C++ SDK. |
+| Taps and swipes only | No drag, multi-touch or physical-control input. |
+| Motion is limited | Acceleration and tilt only; no gyroscope or magnetometer data. |
+| No other hardware access | No positioning, radio, light, sound, time-of-day or files. |
+| 48 × 48 one-bit icons | Launcher icons are monochrome. |
+| No simulator | Test on a device. |
+| Tested on macOS with Apple silicon only | Linux and Windows toolchains are not tested. |
+| SDK not publicly downloadable | The SDK ships with the ORION developer source. |
+
+## Documentation
+
+| Limitation | Impact |
+|---|---|
+| No photographs or product renders | Rev02 hardware does not exist, so none are shown. |
+| Screen images are design renders | Drawn for an earlier hardware configuration; values are illustrative. |
+| No public support channel | See [Support](/support). |

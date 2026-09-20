@@ -1,0 +1,79 @@
+---
+title: "App lifecycle"
+description: "The four lifecycle callbacks of an ORION User App, the order ORION calls them in, and what happens when an app is stopped."
+icon: "arrows-rotate"
+tag: "VERIFIED"
+---
+
+An app is four functions that ORION calls. You write them; you never call them yourself.
+
+| Function | Required | When ORION calls it |
+|---|---|---|
+| `void orion_app_on_enter(void)` | No | Once, when the app opens |
+| `void orion_app_draw(void)` | Yes | Once after `on_enter`, then after every `update` that requested a redraw |
+| `void orion_app_update(void)` | Yes | On every pass of ORION's main loop |
+| `void orion_app_on_exit(void)` | No | Once, when the user leaves with Back |
+
+Only the names matter. `orion build` exports these functions for you.
+
+## Order
+
+<Steps>
+  <Step title="Launch">
+    ORION validates the package, loads the module, checks its imports against its capabilities, and
+    creates the app with its declared memory. **No app code runs during this step.**
+  </Step>
+  <Step title="on_enter runs once">
+    Read saved state here. Do not write storage.
+  </Step>
+  <Step title="draw runs once">
+    To paint the first frame.
+  </Step>
+  <Step title="The loop">
+    On every pass, ORION handles the Back gesture first, then calls `update`, then calls `draw` —
+    but only if `update` called `orion_request_redraw()`.
+  </Step>
+  <Step title="Back">
+    When the user swipes right from the left edge, ORION calls `on_exit` once, releases the app and
+    returns to the launcher.
+  </Step>
+</Steps>
+
+Callbacks never overlap, and they all run on ORION's main loop.
+
+## Redraw on demand
+
+`draw` does not run every frame. Call `orion_request_redraw()` from `update` when something visible changed. A redraw requested from inside `draw` is kept for the next pass, which lets you split an expensive frame across several passes:
+
+```c
+void orion_app_draw(void)
+{
+    int32_t start = orion_time_ms();
+    for (uint32_t i = 0; i < REGION_COUNT; ++i) {
+        if (!(dirty & regions[i].flag)) continue;
+        if (orion_time_ms() - start >= DRAW_SLICE_MS) break; /* the rest next frame */
+        regions[i].paint();
+        dirty &= ~regions[i].flag;
+    }
+    if (dirty) orion_request_redraw();
+}
+```
+
+## When an app is stopped
+
+Every callback runs under an instruction limit and a time budget. ORION stops an app that:
+
+- exceeds its instruction limit, such as an infinite loop;
+- exceeds its time budget, including time spent inside ORION calls;
+- traps, for example by reading outside its memory or overflowing its stack;
+- passes a pointer outside its own memory to an ORION call.
+
+When that happens, ORION shows **APP STOPPED**, releases the app and returns to the launcher. `on_exit` is not called. **ORION keeps running** — it does not restart — and the app can be launched again.
+
+<Tip>
+  A stopped app keeps the storage it wrote before it stopped, because each write is atomic. Values queued in memory but not yet written are lost.
+</Tip>
+
+## Updating an installed app
+
+Installing a package with the same `id` replaces the app and keeps its storage. ORION refuses to install while an app is running.

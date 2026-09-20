@@ -1,0 +1,72 @@
+---
+title: "Security and containment"
+description: "What ORION's User App sandbox protects against, how it was tested, and its limitations. The platform is functionally complete for v1 and not production-secure."
+icon: "shield"
+tag: "VERIFIED"
+---
+
+<Danger>
+  **Not production-secure**
+
+  **ORION User App Platform v1 is functionally complete. It is not production-secure.** It is a developer platform. Packages are unsigned, installation uses a USB developer connection on developer firmware, and the sandbox has not been audited against a determined attacker. Do not install packages from sources you do not trust.
+</Danger>
+
+## What constrains an app
+
+| Mechanism | Effect |
+|---|---|
+| **WebAssembly memory** | An app addresses only its own linear memory. Every access is bounds-checked. |
+| **Fixed memory size** | 1–16 pages, fixed at build time and checked again when the app is created. |
+| **Capability checks** | Every import must belong to a capability the manifest declares. Checked when building, when installing and when launching. |
+| **Pointer checks** | Every pointer passed to ORION is range-checked on each call. |
+| **Instruction limit** | Each callback may execute only its declared number of WebAssembly instructions. |
+| **Time budget** | Each callback has a wall-clock budget, checked when entering and leaving every ORION call and when the callback returns. |
+| **No code at load** | A module with a WebAssembly start function, or exports that a runtime would run automatically when the module is created, is refused before any of its code can run. |
+| **Package validation** | Digest, structure, manifest, limits, API version, imports, exports and a trial creation, before a package is activated. |
+| **OS-owned Back** | The back gesture is taken before the app's `update` runs. |
+| **One app at a time** | An app cannot interact with another app, and cannot see MissionOS memory or data. |
+
+## What happens when an app misbehaves
+
+ORION stops the app, releases its resources, shows **APP STOPPED** and returns to the launcher. **The device keeps running.** These cases were verified on the development prototype:
+
+| Case | Result |
+|---|---|
+| Infinite loop | Stopped by the instruction limit |
+| Repeated expensive ORION calls | Stopped by the time budget |
+| Pointer outside app memory | Stopped with an out-of-range error |
+| Stack overflow | Stopped with an out-of-bounds memory error |
+| Package with a start function | Refused at install; never loaded, never run |
+| Package that exports an automatic initialiser | Refused at install; never created |
+| Package calling an undeclared capability | Refused at install |
+
+After each case, the next app launched normally and no restart occurred.
+
+## Packages that are refused
+
+ORION refuses these packages before activating them, and leaves the installed apps unchanged:
+
+- corrupted or truncated packages, and packages with data appended after the digest;
+- a digest that does not match the contents;
+- malformed WebAssembly;
+- an invalid manifest;
+- calls to a capability the manifest does not declare;
+- initial memory larger than the declared limit;
+- an API version the firmware does not implement;
+- a start function or automatically run exports.
+
+A package that declares a capability it never uses is accepted: an unused capability grants nothing.
+
+## Limitations
+
+- **Packages are unsigned.** There is no signature, trust store, publisher identity or protection against installing an older version. The SHA-256 digest proves a package is intact, not who made it.
+- **Installation uses the USB developer connection.** Any computer that can open ORION's USB port can install an app. A production install path does not exist yet.
+- **No store and no over-the-air distribution.**
+- **Apps run in MissionOS's own loop.** There is no separate process or task per app. Only one app runs at a time.
+- **Limits are enforced per callback**, at ORION call boundaries and by instruction counting, not by hardware pre-emption.
+- **The sandbox constrains apps, not ORION.** A defect in ORION's own functions or drivers is still a defect in the firmware.
+- **No adversarial audit.** The containment above covers the failure modes that were tested.
+
+## Future work
+
+Not part of v1, and not scheduled here: package signing, a trust store and publisher certificates; a production install path; store or over-the-air distribution; per-app anti-rollback; a deeper sandbox review and stronger isolation between apps.

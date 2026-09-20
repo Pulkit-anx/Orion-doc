@@ -1,0 +1,83 @@
+---
+title: "FAQ"
+description: "Short answers to common questions about PocketSAT ORION, MissionOS and User Apps."
+icon: "circle-question"
+---
+
+## Product
+
+### Can I buy PocketSAT ORION?
+
+No. PocketSAT ORION Rev02 is in development and its design is not frozen. No availability, pricing or dates are published.
+
+### What is the difference between the development prototype and Rev02?
+
+The development prototype is ESP32-S3 hardware that MissionOS and the User App Platform run on today. It has a colour touch display and motion sensing, and little else. Rev02 is the planned product: a base unit with more built-in capability, plus stack modules. None of it exists, and it is not documented here beyond saying so.
+
+### Will the base unit have long-range radio?
+
+No. Long-range communication would need the LoRa module. With it, the only range statement ORION makes is up to 1 km line-of-sight, outdoors. The development prototype has no long-range radio of any kind.
+
+### Will the planned environmental sensing measure particulates?
+
+No. The planned air-quality index is based on volatile organic compounds. It does not measure particulates such as PM2.5, and it is not a health or medical measurement. None of this hardware exists yet.
+
+### How long does the battery last?
+
+No battery runtime or charging figure is published. The Rev02 power design is not final.
+
+### Can I attach modules while ORION is on?
+
+No. Attach and remove modules only while ORION is powered off.
+
+### Can ORION go to space?
+
+No. ORION's form is inspired by pico-satellites, but it is not space-qualified or flight-qualified, and it has no product certification.
+
+### Is ORION waterproof or rated for outdoor use?
+
+No ingress-protection rating is published.
+
+### How many modules can I attach?
+
+Not published. The Rev02 design is not final.
+
+## MissionOS
+
+### Why do so many screens show the same numbers?
+
+They show demo data because the hardware they need is not fitted to the development prototype. Every screen's data source is listed in the [screen catalogue](/missionos/screens).
+
+### Are the screen images screenshots?
+
+No. They are design renders, drawn for an earlier hardware configuration. Values in them are illustrative.
+
+### Can I use physical buttons?
+
+Not on the development prototype, which has none. The Rev02 base unit is designed with buttons and potentiometers; their mapping is not final.
+
+## User Apps
+
+### What language are User Apps written in?
+
+C, compiled to WebAssembly. There is no C library and no C++ SDK.
+
+### Where do I get the SDK?
+
+It currently ships inside the ORION developer source, in `sdk/`. There is no public download yet.
+
+### Can my app use positioning, radio or environmental data?
+
+No. ABI 1.0 provides `system`, `display`, `input`, `motion` and `storage` only.
+
+### Is it safe to install apps from other people?
+
+Only from sources you trust. The User App Platform is functionally complete for v1 but not production-secure: packages are unsigned. See [Security](/user-apps/security).
+
+### Can I publish my app to a store?
+
+No. There is no app store or over-the-air distribution.
+
+### Will my app keep working after firmware updates?
+
+Apps built for API 1.0 are designed to keep working: API 1.0 is frozen, and additions go into new minor versions. See [ABI versioning](/reference/abi#versioning).
